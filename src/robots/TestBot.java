@@ -12,17 +12,20 @@ enum State {
 }
 
 enum MovementPattern {
-	Circle, Eight
+	Circle, Eight, Scanning
 }
 
 public class TestBot extends AdvancedRobot {	
+	
+	final int N = 5;
 	
 	// Variables	
 	private int moveDirection = 1;// which way to move
 	private State state = State.Spotting;
 	private int count = 0; // Count for movement patterns
-	private String targetName; // Name of our target
-	private String attackerName; // Robot which last attacked us
+	private MovementPattern movePattern;
+	private EnemyBot[] enemies = new EnemyBot[N];
+	private EnemyBot attacker = new EnemyBot(); // Robot which last attacked us
 	
 	
 	public void run() {	
@@ -35,63 +38,116 @@ public class TestBot extends AdvancedRobot {
 		setAdjustRadarForRobotTurn(true);		
 		setAdjustGunForRobotTurn(true); // Keep turret still while moving
 		turnRadarRight(Double.POSITIVE_INFINITY);
+		RunMovementPattern(MovementPattern.Scanning);
+				
 	}
 	
-	public void onScannedRobot(ScannedRobotEvent e) {	
-				
+	public void onScannedRobot(ScannedRobotEvent e) {
+		if(Check(e)) {
+			AddEnemy(e);
+		}
+		state = State.Attacking;		
+		RunMovementPattern(MovementPattern.Eight);
+		
 		double absBearing = e.getBearing() + getHeading();
 		double gunTurnAmt;
 		
 		// Radar Stuff
 		setTurnRadarLeft(getRadarTurnRemaining());// Lock on the radar
 		
-		// Gun Stuff
-		gunTurnAmt = normalRelativeAngleDegrees(absBearing - getGunHeading());
-		setTurnGunRight(gunTurnAmt); // turn gun
-		
-		
-		// Movement Stuff
-		//setTurnRight(normalRelativeAngleDegrees(absBearing - getHeading()));
-		//setAhead((e.getDistance() - 140) * moveDirection);
-		
-		// Drive in Circles
-		Random random = new Random();
-		int rnd = random.nextInt((2 - 1) + 1) + 1;
-		if(rnd == 1) {
-			moveDirection = -1;
-		} else {
-			moveDirection = 1;
-		}
-		
-		//setTurnRight(45);
-		//setAhead(10);
-		
-		Do();
-		
-		System.out.println(count);
-		
-		setFire(400 / e.getDistance());			
+		if(state == State.Attacking) {
+			// Gun Stuff
+			gunTurnAmt = normalRelativeAngleDegrees(absBearing - getGunHeading());
+			setTurnGunRight(gunTurnAmt); // turn gun
+								
+			setFire(400 / e.getDistance());	
+		}				
 	
+	}
+	
+	public void onHitByBullet(HitByBulletEvent event) {
+		attacker.Init(event);
+	}
+	
+	public void onHitWall(HitWallEvent event) {
+		
+		System.out.println( "Wall Hit Bearing" + event.getBearing());
+		//turnRight(event.getBearing());
+		
 	}
 	
 	public void onStatus(StatusEvent event) {
-		System.out.println("onStatus");
+		printStatus();
 	}
 	
-	private void Do() {
+	private void RunMovementPattern(MovementPattern pattern) {
+		movePattern = pattern;
 		
-		if(count < 40) {
-			setTurnRight(45);
-			setAhead(10);
-		} else {
-			setTurnRight(-45);
-			setAhead(10);
+		if(pattern == MovementPattern.Eight) {
+			
+			if(count < 40) {
+				setTurnRight(45);
+				setAhead(10);
+			} else {
+				setTurnRight(-45);
+				setAhead(10);
+			}
+					
+			count++;
+			if(count == 100) {
+				count = 0;
+			}
+			return;
+		}	
+		
+		if(pattern == MovementPattern.Circle) {
+			
+			setTurnRight(10);
+			setAhead(10);			
+					
+			count++;
+			if(count == 100) {
+				count = 0;
+			}
+			return;
 		}
-				
-		count++;
-		if(count == 100) {
-			count = 0;
+		
+		if(pattern == MovementPattern.Scanning) {
+			
+			setTurnRight(10);
+			setAhead(35);			
+					
+			count++;
+			if(count == 100) {
+				count = 0;
+			}
+			return;
 		}
+		
+	}
+	
+	public void printStatus() {
+		System.out.println("Current MovementPattern: " + movePattern.name() + "\n" + 
+							"Count: " + count + "\n" +
+							"Attacker: " + attacker.getName());
+	}
+	
+	public void AddEnemy(ScannedRobotEvent robot) {
+		for(int i = 0; i < N; i++) {
+			if(enemies[i].getName().equals("None")) {
+				enemies[i].init(robot);
+				return;
+			}
+		}
+	}
+	
+	public boolean Check(ScannedRobotEvent robot) {
+		for(int i = 0; i < N; i++) {
+			if( enemies[i].getName().equals(robot.getName())) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 }
