@@ -30,6 +30,10 @@ public class EnemyBot {
 		heading = event.getHeading();
 	}
 	
+	public String toString() {
+		return name;
+	}
+	
 	public void setBearing(double bearing) {
 		this.bearing = bearing;
 	}
