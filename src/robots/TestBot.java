@@ -6,24 +6,31 @@ import static robocode.util.Utils.*;
 import java.awt.Color;
 import java.util.Random;
 import robocode.ScannedRobotEvent;
+import robocode.util.Utils;
 
 enum State {
 	Spotting, Attacking, Evading, Finishing
 }
 
 enum MovementPattern {
-	Circle, Eight, Scanning, Approach
+	Circle, Eight, Scanning, Approach, Stop, UpAndDown
 }
 
-public class TestBot extends AdvancedRobot {	
+public class TestBot extends TeamRobot {	
 	
 	final int N = 5;
 	
 	// Variables	
-	private int moveDirection = 1;// which way to move
-	private State state = State.Spotting;
+	private int moveDirection = 1;// >0 : turn right, <0 : tun left	
 	private int count = 0; // Count for movement patterns
-	private MovementPattern movePattern;
+	private double EnergyThreshold = 35;
+	
+	private State state = State.Spotting;
+	private MovementPattern movePattern = MovementPattern.Stop;
+	
+	private double deltaTime;
+	private double startTime;
+	
 	private boolean lockTarget = true;
 	private EnemyBot[] enemies = new EnemyBot[N];
 	private EnemyBot attacker = new EnemyBot(); // Robot which last attacked us
@@ -41,12 +48,20 @@ public class TestBot extends AdvancedRobot {
 		setRadarColor(Color.black);
 		setBulletColor(Color.green);
 		
+		startTime = System.currentTimeMillis();
 
 		setAdjustGunForRobotTurn(true); // Keep turret still while moving
-		turnRadarRight(Double.POSITIVE_INFINITY);
-		RunMovementPattern(MovementPattern.Scanning);
 		
-		setAdjustRadarForRobotTurn(true);		
+//		turnRadarRight(Double.POSITIVE_INFINITY);		
+//		setAdjustRadarForRobotTurn(true);	
+		
+		while(true) {
+			
+			if(getRadarTurnRemainingRadians() == 0.0) {
+				setTurnRadarRightRadians(Double.POSITIVE_INFINITY);
+			}
+			execute();
+		}
 		
 		
 	}
@@ -54,28 +69,56 @@ public class TestBot extends AdvancedRobot {
 	public void onScannedRobot(ScannedRobotEvent e) {
 		Update(e);
 		
+		// Absolute angle towards target
+	    double angleToEnemy = getHeadingRadians() + e.getBearingRadians();
+	 
+	    // Subtract current radar heading to get the turn required to face the enemy, be sure it is normalized
+	    double radarTurn = Utils.normalRelativeAngle( angleToEnemy - getRadarHeadingRadians() );
+	 
+	    // Distance we want to scan from middle of enemy to either side
+	    // The 36.0 is how many units from the center of the enemy robot it scans.
+	    double extraTurn = Math.min( Math.atan( 36.0 / e.getDistance() ), Rules.RADAR_TURN_RATE_RADIANS );
+	 
+	    // Adjust the radar turn so it goes that much further in the direction it is going to turn
+	    // Basically if we were going to turn it left, turn it even more left, if right, turn more right.
+	    // This allows us to overshoot our enemy so that we get a good sweep that will not slip.
+	    radarTurn += (radarTurn < 0 ? -extraTurn : extraTurn);
+	 
+	    //Turn the radar
+	    setTurnRadarRightRadians(radarTurn);		
+		
 		state = State.Attacking;		
-		RunMovementPattern(MovementPattern.Eight);
 				
 		// Radar Stuff
-		setTurnRadarLeft(getRadarTurnRemaining());// Lock on the radar
-		
-						
+		//setTurnRadarLeft(getRadarTurnRemaining());// Lock on the radar						
 	
 	}
 	
 	public void onHitByBullet(HitByBulletEvent event) {
 		attacker.Init(event);
+		
+		if(getEnergy() <= EnergyThreshold) {
+			state = State.Evading;
+		}
 	}
 	
-	public void onHitWall(HitWallEvent event) {
+	public void onHitWall(HitWallEvent event) {		
 		
-		System.out.println( "Wall Hit Bearing" + event.getBearing());
-		//turnRight(event.getBearing());
+		if(movePattern == MovementPattern.UpAndDown) {
+			moveDirection *= -1;
+			setAhead(moveDirection * 5);
+		}
 		
+		// TODO:
+		// Implement a DELAYED change of the current movePattern, so we wont crash into the wall again
 	}
 	
 	public void onStatus(StatusEvent event) {
+		
+		deltaTime = (System.currentTimeMillis() - startTime) / 1000.0;
+		startTime = System.currentTimeMillis();		
+		
+		// Execute behavior for corresponding state
 		
 		if(state == State.Attacking) {
 			target = enemies[0];
@@ -84,13 +127,36 @@ public class TestBot extends AdvancedRobot {
 						
 			// Gun Stuff
 			gunTurnAmt = normalRelativeAngleDegrees(absBearing - getGunHeading());
+			// Adjust turn amount to compensate own movement
+			gunTurnAmt += (moveDirection * -1) * 5;
 			setTurnGunRight(gunTurnAmt); // turn gun
 			
-			if(target.getDistance() < 350) {
+			if(target.getDistance() < 450 && getEnergy() > EnergyThreshold) {
 				setFire(400 / target.getDistance());
-			}
+			}				
 			
-				
+			// Run Attacking movement pattern/strategy
+			RunMovementPattern(MovementPattern.UpAndDown); // Needs to be adjusted, should try to get closer to enemy etc
+		}
+		
+		if(state == State.Spotting) {
+			// not really necessary, I think 
+			
+			
+		}
+		
+		if(state == State.Evading) {
+			// TODO:
+			// Implement anti gravity stuff here
+			RunMovementPattern(MovementPattern.Stop);
+			
+		}
+		
+		if(state == State.Finishing) {
+			// TODO:
+			// Implement aggressive close combat behavior here, don't let enemy escape
+			
+			
 		}
 		
 		printStatus();
@@ -103,10 +169,10 @@ public class TestBot extends AdvancedRobot {
 		if(pattern == MovementPattern.Eight) {
 			
 			if(count < 40) {
-				setTurnRight(45);
+				setTurnRight(moveDirection * 45);
 				setAhead(10);
 			} else {
-				setTurnRight(-45);
+				setTurnRight(moveDirection * -45);
 				setAhead(10);
 			}
 					
@@ -119,7 +185,7 @@ public class TestBot extends AdvancedRobot {
 		
 		if(pattern == MovementPattern.Circle) {
 			
-			setTurnRight(10);
+			setTurnRight(moveDirection * 10);
 			setAhead(10);			
 					
 			count++;
@@ -147,13 +213,28 @@ public class TestBot extends AdvancedRobot {
 			
 		}
 		
+		if(pattern == MovementPattern.Stop) {
+			
+			// Do nothing
+			
+		}
+		
+		if(pattern == MovementPattern.UpAndDown) {
+			
+			setAhead(moveDirection * 10);
+			
+		}
+		
 	}
 	
 	public void printStatus() {
+		System.out.println("---------------------------------------------------------");
 		System.out.println("Current MovementPattern: " + movePattern.name() + "\n" + 
 							"Count: " + count + "\n" +
 							"Attacker: " + attacker.getName() + "\n" +
-							"Target: " + target.getName());
+							"Target: " + target.getName() + "\n" + 
+							"State: " + state);
+		System.out.println("---------------------------------------------------------");
 	}
 		
 	public void Update(ScannedRobotEvent robot) {		
