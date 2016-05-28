@@ -4,6 +4,7 @@ import robocode.*;
 import static robocode.util.Utils.*;
 
 import java.awt.Color;
+import java.awt.geom.Point2D;
 import java.util.Random;
 import robocode.ScannedRobotEvent;
 import robocode.util.Utils;
@@ -36,6 +37,10 @@ public class TestBot extends TeamRobot {
 	private EnemyBot attacker = new EnemyBot(); // Robot which last attacked us
 	private EnemyBot target;
 	
+	// Statistics
+	private int shotsHit = 0;
+	private int shotsMissed = 0;
+	
 	public void run() {	
 		
 		for(int i= 0; i < N; i++) {
@@ -67,7 +72,7 @@ public class TestBot extends TeamRobot {
 	}
 	
 	public void onScannedRobot(ScannedRobotEvent e) {
-		Update(e);
+		update(e);
 		
 		// Absolute angle towards target
 	    double angleToEnemy = getHeadingRadians() + e.getBearingRadians();
@@ -95,7 +100,7 @@ public class TestBot extends TeamRobot {
 	}
 	
 	public void onHitByBullet(HitByBulletEvent event) {
-		attacker.Init(event);
+		attacker.init(event);
 		
 		if(getEnergy() <= EnergyThreshold) {
 			state = State.Evading;
@@ -113,30 +118,32 @@ public class TestBot extends TeamRobot {
 		// Implement a DELAYED change of the current movePattern, so we wont crash into the wall again
 	}
 	
-	public void onStatus(StatusEvent event) {
+	
+	public void onBulletMissed(BulletMissedEvent event) {
+	    shotsMissed++;
+	}
+	
+	public void onBulletHit(BulletHitEvent event) {	      
+		shotsHit++;
+   }
+	
+	public void onRoundEnded(RoundEndedEvent event) {	      
+	   }
+	
+	public void onStatus(StatusEvent event) {		
 		
 		deltaTime = (System.currentTimeMillis() - startTime) / 1000.0;
 		startTime = System.currentTimeMillis();		
 		
-		// Execute behavior for corresponding state
-		
+		// Execute behavior for corresponding state		
 		if(state == State.Attacking) {
-			target = enemies[0];
-			double absBearing = target.getBearing() + getHeading();
-			double gunTurnAmt;
+			target = enemies[0];		
 						
-			// Gun Stuff
-			gunTurnAmt = normalRelativeAngleDegrees(absBearing - getGunHeading());
-			// Adjust turn amount to compensate own movement
-			gunTurnAmt += (moveDirection * -1) * 5;
-			setTurnGunRight(gunTurnAmt); // turn gun
+			fireGun(target);		
 			
-			if(target.getDistance() < 450 && getEnergy() > EnergyThreshold) {
-				setFire(400 / target.getDistance());
-			}				
 			
 			// Run Attacking movement pattern/strategy
-			RunMovementPattern(MovementPattern.UpAndDown); // Needs to be adjusted, should try to get closer to enemy etc
+			RunMovementPattern(MovementPattern.Stop); // Needs to be adjusted, should try to get closer to enemy etc
 		}
 		
 		if(state == State.Spotting) {
@@ -234,10 +241,18 @@ public class TestBot extends TeamRobot {
 							"Attacker: " + attacker.getName() + "\n" +
 							"Target: " + target.getName() + "\n" + 
 							"State: " + state);
+		System.out.println("Shots Fired: " + (shotsHit + shotsMissed));
+		System.out.println("Shots Hits: " + shotsHit);
+	    System.out.println("Shots Missed: " + shotsMissed);
+	    double acc = 0;
+	    if((shotsHit + shotsMissed) != 0) {
+	    	acc = shotsHit / (shotsHit + shotsMissed) * 100;
+	    }	    
+	    System.out.println("Accuracy: " + acc);
 		System.out.println("---------------------------------------------------------");
 	}
 		
-	public void Update(ScannedRobotEvent robot) {		
+	public void update(ScannedRobotEvent robot) {		
 		for(int i = 0; i < N; i++) {
 			// Update robot			
 			if( enemies[i].getName().equals(robot.getName())) {
@@ -260,5 +275,29 @@ public class TestBot extends TeamRobot {
 			}
 		}
 	}
+	
+	private double fireGun(EnemyBot target) {
+		ScannedRobotEvent enemy = target.getInfo();
+		double absBearing = enemy.getBearing() + getHeading();
+		double gunTurnAmt;
+		
+		// Calculate enemie's lateral velocity
+		double latVel = enemy.getVelocity() * Math.sin(enemy.getHeadingRadians() - Math.toRadians(absBearing));
+		
+		//double bulletSpeed = 20 -  Math.min(500 / enemy.getDistance(), 3) * 3; // between 17 and 11
+		double bulletSpeed = 20 - 3 * (400 / target.getDistance());
+		
+		gunTurnAmt = normalRelativeAngleDegrees(absBearing - getGunHeading() + ((latVel / bulletSpeed) * 57.3) );
+		setTurnGunRight(gunTurnAmt); // Turn gun
+		
+		if(target.getDistance() < 600 && getEnergy() > EnergyThreshold) {				
+			if(Math.abs(getTurnRemaining()) <= 5) { // Don't shoot before gun is adjusted
+				setFire(400 / target.getDistance());				
+			}				
+		}	
+		
+		return gunTurnAmt;
+	}
+	
 
 }

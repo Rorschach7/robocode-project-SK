@@ -8,6 +8,8 @@ public class EnemyBot {
 	private double distance;
 	private double bearing;
 	private double heading;
+	private ScannedRobotEvent info;
+	
 	
 	public EnemyBot() {
 		name = "None";
@@ -17,13 +19,14 @@ public class EnemyBot {
 	}
 	
 	public void init(ScannedRobotEvent event) {
+		info = event;
 		name = event.getName();
 		distance = event.getDistance();
 		bearing = event.getBearing();
-		heading = event.getHeading();
+		heading = event.getHeading();		
 	}
 	
-	public void Init(HitByBulletEvent event) {
+	public void init(HitByBulletEvent event) {
 		name = event.getName();
 		distance = -1;
 		bearing = event.getBearing();
@@ -66,5 +69,7 @@ public class EnemyBot {
 		return name;
 	}
 	
-	
+	public ScannedRobotEvent getInfo() {
+		return info;
+	}	
 }
