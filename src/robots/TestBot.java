@@ -49,26 +49,21 @@ public class TestBot extends TeamRobot {
 		
 		// Color
 		setBodyColor(Color.black);
-		setGunColor(Color.yellow);
-		setRadarColor(Color.black);
+		setGunColor(Color.black);
+		setRadarColor(Color.yellow);
 		setBulletColor(Color.green);
 		
 		startTime = System.currentTimeMillis();
 
 		setAdjustGunForRobotTurn(true); // Keep turret still while moving
-		
-//		turnRadarRight(Double.POSITIVE_INFINITY);		
-//		setAdjustRadarForRobotTurn(true);	
-		
+				
 		while(true) {
 			
 			if(getRadarTurnRemainingRadians() == 0.0) {
 				setTurnRadarRightRadians(Double.POSITIVE_INFINITY);
 			}
 			execute();
-		}
-		
-		
+		}		
 	}
 	
 	public void onScannedRobot(ScannedRobotEvent e) {
@@ -93,9 +88,6 @@ public class TestBot extends TeamRobot {
 	    setTurnRadarRightRadians(radarTurn);		
 		
 		state = State.Attacking;		
-				
-		// Radar Stuff
-		//setTurnRadarLeft(getRadarTurnRemaining());// Lock on the radar						
 	
 	}
 	
@@ -143,7 +135,7 @@ public class TestBot extends TeamRobot {
 			
 			
 			// Run Attacking movement pattern/strategy
-			RunMovementPattern(MovementPattern.Stop); // Needs to be adjusted, should try to get closer to enemy etc
+			RunMovementPattern(MovementPattern.UpAndDown); // Needs to be adjusted, should try to get closer to enemy etc
 		}
 		
 		if(state == State.Spotting) {
@@ -155,6 +147,7 @@ public class TestBot extends TeamRobot {
 		if(state == State.Evading) {
 			// TODO:
 			// Implement anti gravity stuff here
+			// Or short evasive maneuver
 			RunMovementPattern(MovementPattern.Stop);
 			
 		}
@@ -173,6 +166,7 @@ public class TestBot extends TeamRobot {
 	private void RunMovementPattern(MovementPattern pattern) {
 		movePattern = pattern;
 		
+		// Pattern Eight
 		if(pattern == MovementPattern.Eight) {
 			
 			if(count < 40) {
@@ -190,6 +184,7 @@ public class TestBot extends TeamRobot {
 			return;
 		}	
 		
+		// Pattern Circle 
 		if(pattern == MovementPattern.Circle) {
 			
 			setTurnRight(moveDirection * 10);
@@ -202,6 +197,7 @@ public class TestBot extends TeamRobot {
 			return;
 		}
 		
+		// Pattern Scanning
 		if(pattern == MovementPattern.Scanning) {
 			
 			setTurnRight(10);
@@ -214,18 +210,21 @@ public class TestBot extends TeamRobot {
 			return;
 		}
 		
+		// Pattern Approaching
 		if(pattern == MovementPattern.Approach) {
 			
 			
 			
 		}
 		
+		// Pattern Stop
 		if(pattern == MovementPattern.Stop) {
 			
 			// Do nothing
 			
 		}
 		
+		// Pattern Up and Down
 		if(pattern == MovementPattern.UpAndDown) {
 			
 			setAhead(moveDirection * 10);
@@ -276,27 +275,26 @@ public class TestBot extends TeamRobot {
 		}
 	}
 	
-	private double fireGun(EnemyBot target) {
+	private void fireGun(EnemyBot target) {
 		ScannedRobotEvent enemy = target.getInfo();
 		double absBearing = enemy.getBearing() + getHeading();
 		double gunTurnAmt;
 		
 		// Calculate enemie's lateral velocity
 		double latVel = enemy.getVelocity() * Math.sin(enemy.getHeadingRadians() - Math.toRadians(absBearing));
-		
-		//double bulletSpeed = 20 -  Math.min(500 / enemy.getDistance(), 3) * 3; // between 17 and 11
+				
 		double bulletSpeed = 20 - 3 * (400 / target.getDistance());
 		
 		gunTurnAmt = normalRelativeAngleDegrees(absBearing - getGunHeading() + ((latVel / bulletSpeed) * 57.3) );
 		setTurnGunRight(gunTurnAmt); // Turn gun
 		
 		if(target.getDistance() < 600 && getEnergy() > EnergyThreshold) {				
-			if(Math.abs(getTurnRemaining()) <= 5) { // Don't shoot before gun is adjusted
-				setFire(400 / target.getDistance());				
+			if(Math.abs(getGunTurnRemaining()) <= 5) { // Don't shoot before gun is adjusted
+				setFire(400 / target.getDistance());
+				System.out.println("FIRE");
 			}				
 		}	
-		
-		return gunTurnAmt;
+		return;
 	}
 	
 
