@@ -10,11 +10,22 @@ import robocode.Rules;
 import robocode.ScannedRobotEvent;
 import robocode.StatusEvent;
 
+enum AvoidWall {
+	West, North, East, South, None;
+}
+
+// Idee: 
+//	Bots beobachten. 
+//		Wenn sie stehen => normal schießen
+//		wenn sie sich bewegen => mit trigonometrie zukünftigen
+//			standort berechnen und dort hin schießen
+
 public class TestBot2 extends AdvancedRobot {
 	private double lastRobotDistance;
 	private String lastRobotName;
 	private boolean lastRobotDied = false;
 	private double moveDirection = 1;
+	private AvoidWall avoidWall = AvoidWall.None;
 
 	public void run() {
 		setBodyColor(Color.black);
@@ -101,55 +112,53 @@ public class TestBot2 extends AdvancedRobot {
 		double fieldHeight = getBattleFieldHeight();
 		double avoidDistance = 120;
 		double turnDegree = 15;
+		double xDist = getX() + Math.sin(Math.toRadians(this.getHeading()))
+				* avoidDistance;
+		double yDist = getY() + Math.cos(Math.toRadians(this.getHeading()))
+				* avoidDistance;
 
-		// TODO still bugs sometimes when heading to an edge
-
-		// System.out.println("stickX: "
-		// + (getX() + Math.sin(Math.toRadians(this.getHeading())) *
-		// avoidDistance) + " stickY: "
-		// + (getY() + Math.cos(Math.toRadians(this.getHeading())) *
-		// avoidDistance) + " heading: " + this.getHeading()
-		// + " X: " + getX() + " sinH: " + Math.sin(this.getHeading())
-		// + " Y: " + getY() + " cosH: " + Math.cos(this.getHeading()));
-
-		if (getX() + Math.sin(Math.toRadians(this.getHeading()))
-				* avoidDistance >= fieldWith - 36) {
+		if (xDist >= fieldWith - 36 || avoidWall == AvoidWall.East) {
 			// going to hit east wall
-			System.out.println("going to hit east wall-------------------");
-			if (this.getHeading() > 0 && this.getHeading() < 90)
+			avoidWall = AvoidWall.East;
+			if (this.getHeading() > 0 && this.getHeading() <= 90)
 				turnLeft(turnDegree);
-			if (this.getHeading() > 90 && this.getHeading() < 180)
+			else if (this.getHeading() > 90 && this.getHeading() <= 180)
 				turnRight(turnDegree);
+			else
+				avoidWall = AvoidWall.None;
 			return true;
 		}
-		if (getX() + Math.sin(Math.toRadians(this.getHeading()))
-				* avoidDistance <= 18) {
+		if (xDist <= 18 || avoidWall == AvoidWall.West) {
 			// going to hit west wall
-			System.out.println("going to hit west wall-------------------");
-			if (this.getHeading() > 270 && this.getHeading() < 360)
+			avoidWall = AvoidWall.West;
+			if (this.getHeading() > 270 && this.getHeading() <= 360)
 				turnRight(turnDegree);
-			if (this.getHeading() > 180 && this.getHeading() < 270)
+			else if (this.getHeading() > 180 && this.getHeading() <= 270)
 				turnLeft(turnDegree);
+			else
+				avoidWall = AvoidWall.None;
 			return true;
 		}
-		if (getY() + Math.cos(Math.toRadians(this.getHeading()))
-				* avoidDistance >= fieldHeight - 36) {
+		if (yDist >= fieldHeight - 36 || avoidWall == AvoidWall.North) {
 			// going to hit north wall
-			System.out.println("going to hit north wall-------------------");
-			if (this.getHeading() > 270 && this.getHeading() < 360)
+			avoidWall = AvoidWall.North;
+			if (this.getHeading() > 270 && this.getHeading() <= 360)
 				turnLeft(turnDegree);
-			if (this.getHeading() > 0 && this.getHeading() < 90)
+			else if (this.getHeading() > 0 && this.getHeading() <= 90)
 				turnRight(turnDegree);
+			else
+				avoidWall = AvoidWall.None;
 			return true;
 		}
-		if (getY() + Math.cos(Math.toRadians(this.getHeading()))
-				* avoidDistance <= 18) {
+		if (yDist <= 18 || avoidWall == AvoidWall.South) {
 			// going to hit south wall
-			System.out.println("going to hit south wall-------------------");
-			if (this.getHeading() > 90 && this.getHeading() < 180)
+			avoidWall = AvoidWall.South;
+			if (this.getHeading() > 90 && this.getHeading() <= 180)
 				turnLeft(turnDegree);
-			if (this.getHeading() > 180 && this.getHeading() < 270)
+			else if (this.getHeading() > 180 && this.getHeading() <= 270)
 				turnRight(turnDegree);
+			else
+				avoidWall = AvoidWall.None;
 			return true;
 		}
 		return false;
