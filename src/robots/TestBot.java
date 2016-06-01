@@ -22,9 +22,11 @@ public class TestBot extends TeamRobot {
 	final int N = 5;
 	
 	// Variables	
-	private int moveDirection = 1;// >0 : turn right, <0 : tun left	
+	private int moveDirection = 1;// >0 : turn right, <0 : tun left
+	private int turnDirection = 1;
 	private int count = 0; // Count for movement patterns
 	private double EnergyThreshold = 35;
+	private boolean resetMovement = true;
 	
 	private State state = State.Spotting;
 	private MovementPattern movePattern = MovementPattern.Stop;
@@ -36,10 +38,13 @@ public class TestBot extends TeamRobot {
 	private EnemyBot[] enemies = new EnemyBot[N];
 	private EnemyBot attacker = new EnemyBot(); // Robot which last attacked us
 	private EnemyBot target;
+	private AvoidWall avoidWall;
 	
 	// Statistics
 	private int shotsHit = 0;
 	private int shotsMissed = 0;
+
+	private boolean bulletHit;
 	
 	public void run() {	
 		
@@ -117,6 +122,7 @@ public class TestBot extends TeamRobot {
 	
 	public void onBulletHit(BulletHitEvent event) {	      
 		shotsHit++;
+		bulletHit = true;
    }
 	
 	public void onRoundEnded(RoundEndedEvent event) {	      
@@ -126,6 +132,11 @@ public class TestBot extends TeamRobot {
 		
 		deltaTime = (System.currentTimeMillis() - startTime) / 1000.0;
 		startTime = System.currentTimeMillis();		
+				
+		// Avoid walls
+		avoidWalls();
+		
+		
 		
 		// Execute behavior for corresponding state		
 		if(state == State.Attacking) {
@@ -159,21 +170,23 @@ public class TestBot extends TeamRobot {
 			
 		}
 		
-		printStatus();
+		//printStatus();
 		
 	}
-	
+
 	private void RunMovementPattern(MovementPattern pattern) {
 		movePattern = pattern;
+		
+		
 		
 		// Pattern Eight
 		if(pattern == MovementPattern.Eight) {
 			
 			if(count < 40) {
-				setTurnRight(moveDirection * 45);
+				setTurnRight(turnDirection * 45);
 				setAhead(10);
 			} else {
-				setTurnRight(moveDirection * -45);
+				setTurnRight(turnDirection * -45);
 				setAhead(10);
 			}
 					
@@ -187,7 +200,7 @@ public class TestBot extends TeamRobot {
 		// Pattern Circle 
 		if(pattern == MovementPattern.Circle) {
 			
-			setTurnRight(moveDirection * 10);
+			setTurnRight(turnDirection * 10);
 			setAhead(10);			
 					
 			count++;
@@ -251,7 +264,16 @@ public class TestBot extends TeamRobot {
 		System.out.println("---------------------------------------------------------");
 	}
 		
-	public void update(ScannedRobotEvent robot) {		
+	public void update(ScannedRobotEvent robot) {
+		
+		// Scan energy
+		if (target != null) {
+			double enemyDeltaEnergy = target.getInfo().getEnergy() - robot.getEnergy();
+			if(enemyDeltaEnergy > 0) {
+				avoidBullet(enemyDeltaEnergy);				
+			}
+		}
+				
 		for(int i = 0; i < N; i++) {
 			// Update robot			
 			if( enemies[i].getName().equals(robot.getName())) {
@@ -273,6 +295,7 @@ public class TestBot extends TeamRobot {
 				return;
 			}
 		}
+		
 	}
 	
 	private void fireGun(EnemyBot target) {
@@ -283,19 +306,84 @@ public class TestBot extends TeamRobot {
 		// Calculate enemie's lateral velocity
 		double latVel = enemy.getVelocity() * Math.sin(enemy.getHeadingRadians() - Math.toRadians(absBearing));
 				
-		double bulletSpeed = 20 - 3 * (400 / target.getDistance());
+		double bulletSpeed = 20 - 3 * (400 / target.getInfo().getDistance());
 		
 		gunTurnAmt = normalRelativeAngleDegrees(absBearing - getGunHeading() + ((latVel / bulletSpeed) * 57.3) );
 		setTurnGunRight(gunTurnAmt); // Turn gun
 		
-		if(target.getDistance() < 600 && getEnergy() > EnergyThreshold) {				
+		if(target.getInfo().getDistance() < 600 && getEnergy() > EnergyThreshold) {				
 			if(Math.abs(getGunTurnRemaining()) <= 5) { // Don't shoot before gun is adjusted
-				setFire(400 / target.getDistance());
-				System.out.println("FIRE");
+				setFire(400 / target.getInfo().getDistance());
+				//System.out.println("FIRE");
 			}				
 		}	
 		return;
 	}
 	
+	private boolean avoidWalls() {
+		double fieldWith = getBattleFieldWidth();
+		double fieldHeight = getBattleFieldHeight();
+		double avoidDistance = 120;
+		double turnDegree = 15;
+		double xDist = getX() + Math.sin(Math.toRadians(this.getHeading()))
+				* avoidDistance;
+		double yDist = getY() + Math.cos(Math.toRadians(this.getHeading()))
+				* avoidDistance;
+
+		if (xDist >= fieldWith - 36 || avoidWall == AvoidWall.East) {
+			// going to hit east wall
+			avoidWall = AvoidWall.East;
+			if (this.getHeading() > 0 && this.getHeading() <= 90)
+				turnLeft(turnDegree);
+			else if (this.getHeading() > 90 && this.getHeading() <= 180)
+				turnRight(turnDegree);
+			else
+				avoidWall = AvoidWall.None;
+			return true;
+		}
+		if (xDist <= 18 || avoidWall == AvoidWall.West) {
+			// going to hit west wall
+			avoidWall = AvoidWall.West;
+			if (this.getHeading() > 270 && this.getHeading() <= 360)
+				turnRight(turnDegree);
+			else if (this.getHeading() > 180 && this.getHeading() <= 270)
+				turnLeft(turnDegree);
+			else
+				avoidWall = AvoidWall.None;
+			return true;
+		}
+		if (yDist >= fieldHeight - 36 || avoidWall == AvoidWall.North) {
+			// going to hit north wall
+			avoidWall = AvoidWall.North;
+			if (this.getHeading() > 270 && this.getHeading() <= 360)
+				turnLeft(turnDegree);
+			else if (this.getHeading() > 0 && this.getHeading() <= 90)
+				turnRight(turnDegree);
+			else
+				avoidWall = AvoidWall.None;
+			return true;
+		}
+		if (yDist <= 18 || avoidWall == AvoidWall.South) {
+			// going to hit south wall
+			avoidWall = AvoidWall.South;
+			if (this.getHeading() > 90 && this.getHeading() <= 180)
+				turnLeft(turnDegree);
+			else if (this.getHeading() > 180 && this.getHeading() <= 270)
+				turnRight(turnDegree);
+			else
+				avoidWall = AvoidWall.None;
+			return true;
+		}
+		return false;
+	}
+	
+	private void avoidBullet(double deltaEnergy) {
+		
+		if(deltaEnergy <= 3 || bulletHit) {
+			System.out.println("AVOID: " + deltaEnergy);
+			bulletHit = false;
+		}
+		
+	}
 
 }
