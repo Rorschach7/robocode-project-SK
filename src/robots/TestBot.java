@@ -173,7 +173,11 @@ public class TestBot extends TeamRobot {
 		//printStatus();
 		
 	}
-
+	
+	/**
+	 * Executes the specified movement pattern
+	 * @param pattern the movement pattern that should be executed
+	 */
 	private void RunMovementPattern(MovementPattern pattern) {
 		movePattern = pattern;
 		
@@ -246,6 +250,9 @@ public class TestBot extends TeamRobot {
 		
 	}
 	
+	/**
+	 * Prints current status information
+	 */
 	public void printStatus() {
 		System.out.println("---------------------------------------------------------");
 		System.out.println("Current MovementPattern: " + movePattern.name() + "\n" + 
@@ -263,7 +270,11 @@ public class TestBot extends TeamRobot {
 	    System.out.println("Accuracy: " + acc);
 		System.out.println("---------------------------------------------------------");
 	}
-		
+	
+	/**
+	 * Updates the enemies array
+	 * @param robot the robot that should be updated
+	 */
 	public void update(ScannedRobotEvent robot) {
 		
 		// Scan energy
@@ -298,6 +309,10 @@ public class TestBot extends TeamRobot {
 		
 	}
 	
+	/**
+	 * Fires the tank's gun. Uses linear targeting and gun power dependent on distance between tank and enemy
+	 * @param target
+	 */
 	private void fireGun(EnemyBot target) {
 		ScannedRobotEvent enemy = target.getInfo();
 		double absBearing = enemy.getBearing() + getHeading();
@@ -320,6 +335,10 @@ public class TestBot extends TeamRobot {
 		return;
 	}
 	
+	/**
+	 * Calculates future position and checks whether the tank will collide with a wall or not.
+	 * @return true, if wall will be hit. Otherwise false.
+	 */
 	private boolean avoidWalls() {
 		double fieldWith = getBattleFieldWidth();
 		double fieldHeight = getBattleFieldHeight();
@@ -377,6 +396,10 @@ public class TestBot extends TeamRobot {
 		return false;
 	}
 	
+	/**
+	 * Tries to figure out if enemy tank shots at us and starts evasive maneuver if  
+	 * @param deltaEnergy the energy the enemy tank lost between last and current turn
+	 */
 	private void avoidBullet(double deltaEnergy) {
 		
 		if(deltaEnergy <= 3 || bulletHit) {
