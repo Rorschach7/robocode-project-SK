@@ -100,7 +100,7 @@ public class TestBot2 extends AdvancedRobot {
 	private double calcFirePowerLife(ScannedRobotEvent e) {
 		double firePower = Rules.MIN_BULLET_POWER;
 		@SuppressWarnings("deprecation")
-		double life = e.getLife();
+		double life = e.getEnergy();
 
 		// raise bullet power till max or the damage is higher than life
 		while (Rules.getBulletDamage(firePower) < life
