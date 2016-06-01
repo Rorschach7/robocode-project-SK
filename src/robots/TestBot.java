@@ -2,42 +2,37 @@ package robots;
 
 import robocode.*;
 import static robocode.util.Utils.*;
-
 import java.awt.Color;
-import java.awt.geom.Point2D;
 import java.util.Random;
 import robocode.ScannedRobotEvent;
 import robocode.util.Utils;
 
 enum State {
-	Spotting, Attacking, Evading, Finishing
+	Scanning, Attacking, Evading, Finishing
 }
 
 enum MovementPattern {
 	Circle, Eight, Scanning, Approach, Stop, UpAndDown
 }
 
-public class TestBot extends TeamRobot {	
-	
-	final int N = 5;
+public class TestBot extends TeamRobot {
 	
 	// Variables	
 	private int moveDirection = 1;// >0 : turn right, <0 : tun left
 	private int turnDirection = 1;
 	private int count = 0; // Count for movement patterns
-	private double EnergyThreshold = 15;
-	private boolean resetMovement = true;
-	
-	private State state = State.Spotting;
+	private double EnergyThreshold = 15;	
+	private boolean scanStarted = false;
+	private State state = State.Evading;
 	private MovementPattern movePattern = MovementPattern.Stop;
 	
-	private double deltaTime;
-	private double startTime;
+	// Time Handles in rounds	
+	private double scanElapsedTime;	
+	private double scanTimer = 10; // time elapses between scans	
 	
-	private boolean lockTarget = true;
-	private EnemyBot[] enemies = new EnemyBot[N];
+	private EnemyBot[] enemies;
 	private EnemyBot attacker = new EnemyBot(); // Robot which last attacked us
-	private EnemyBot target;
+	private EnemyBot target = new EnemyBot();
 	private AvoidWall avoidWall;
 	
 	// Statistics
@@ -50,51 +45,30 @@ public class TestBot extends TeamRobot {
 	
 	public void run() {	
 		
-		for(int i= 0; i < N; i++) {
-			enemies[i] = new EnemyBot();			
-		}
-		
 		// Color
 		setBodyColor(Color.black);
 		setGunColor(Color.black);
 		setRadarColor(Color.yellow);
-		setBulletColor(Color.green);
+		setBulletColor(Color.green);		
 		
-		startTime = System.currentTimeMillis();
-
-		setAdjustGunForRobotTurn(true); // Keep turret still while moving
-				
-		while(true) {
-			
-			if(getRadarTurnRemainingRadians() == 0.0) {
-				setTurnRadarRightRadians(Double.POSITIVE_INFINITY);
-			}
-			execute();
-		}		
+		setAdjustGunForRobotTurn(true);
+		//setAdjustRadarForRobotTurn(true);
+		//setAdjustRadarForGunTurn(true);
+		
+		state = State.Scanning;			
+		
 	}
 	
 	public void onScannedRobot(ScannedRobotEvent e) {
-		update(e);
+		update(e);	
 		
-		// Absolute angle towards target
-	    double angleToEnemy = getHeadingRadians() + e.getBearingRadians();
-	 
-	    // Subtract current radar heading to get the turn required to face the enemy, be sure it is normalized
-	    double radarTurn = Utils.normalRelativeAngle( angleToEnemy - getRadarHeadingRadians() );
-	 
-	    // Distance we want to scan from middle of enemy to either side
-	    // The 36.0 is how many units from the center of the enemy robot it scans.
-	    double extraTurn = Math.min( Math.atan( 36.0 / e.getDistance() ), Rules.RADAR_TURN_RATE_RADIANS );
-	 
-	    // Adjust the radar turn so it goes that much further in the direction it is going to turn
-	    // Basically if we were going to turn it left, turn it even more left, if right, turn more right.
-	    // This allows us to overshoot our enemy so that we get a good sweep that will not slip.
-	    radarTurn += (radarTurn < 0 ? -extraTurn : extraTurn);
-	 
-	    //Turn the radar
-	    setTurnRadarRightRadians(radarTurn);		
-		
-		state = State.Attacking;		
+//		System.out.println("---Begin---");		
+//		for(int i = 0;i < enemies.length; i++) {
+//			if(enemies[i] != null) {
+//				System.out.println(enemies[i].getName());
+//			}
+//		}		
+//		System.out.println("---End---");		
 	
 	}
 	
@@ -133,8 +107,7 @@ public class TestBot extends TeamRobot {
 		// TODO:
 		// Implement a DELAYED change of the current movePattern, so we wont crash into the wall again
 	}
-	
-	
+		
 	public void onBulletMissed(BulletMissedEvent event) {
 	    shotsMissed++;
 	}
@@ -144,44 +117,67 @@ public class TestBot extends TeamRobot {
 		bulletHit = true;
    }
 	
-	public void onRoundEnded(RoundEndedEvent event) {	      
+	public void onRoundEnded(RoundEndedEvent event) {
+		// TODO: Victory Dance
 	   }
 	
 	public void onStatus(StatusEvent event) {		
 		
-		deltaTime = (System.currentTimeMillis() - startTime) / 1000.0;
-		startTime = System.currentTimeMillis();		
+		// Increment Time Handler
+		if(!scanStarted) {
+			scanElapsedTime++;
+		}		
+		
+		// Periodic scan		
+		if(scanElapsedTime >= scanTimer) {
+			if(enemies != null && enemies.length > 1) {
+				state = State.Scanning;
+			}			
+			scanElapsedTime = 0;
+		}	
 				
 		// Avoid walls
-		avoidWalls();
-		
-		
+		avoidWalls();		
 		
 		// Execute behavior for corresponding state		
 		if(state == State.Attacking) {
-			// TODO: 
-			// Bad 
-			target = enemies[0];		
 			
-			// TODO: find target
-			fireGun(target);		
+			// Find Target
+			findTarget();
 			
+			// Lock radar on target
+			lockRadarOnTarget();			
+			
+			//fireGun(target);
 			
 			// Run Attacking movement pattern/strategy
-			RunMovementPattern(MovementPattern.UpAndDown); // Needs to be adjusted, should try to get closer to enemy etc
+			// TODO:
+			runMovementPattern(MovementPattern.UpAndDown); // Needs to be adjusted, should try to get closer to enemy etc
 		}
 		
-		if(state == State.Spotting) {
-			// not really necessary, I think 
+		if(state == State.Scanning) {
 			
+			runMovementPattern(MovementPattern.UpAndDown);
 			
+			if(!scanStarted) {
+				// make a short scan of the whole battlefield
+				System.out.println("Executing Scan");
+				setTurnRadarRight(360);
+				scanStarted = true;
+			} else if (getRadarTurnRemaining() < 10){
+				
+				// make a short scan of the whole battlefield
+				System.out.println("Scan finished");
+				scanStarted = false;
+				state = State.Attacking;
+			}
 		}
 		
 		if(state == State.Evading) {
 			// TODO:
 			// Implement anti gravity stuff here
 			// Or short evasive maneuver
-			RunMovementPattern(MovementPattern.Stop);
+			runMovementPattern(MovementPattern.Stop);
 			
 		}
 		
@@ -192,7 +188,7 @@ public class TestBot extends TeamRobot {
 			
 		}
 		
-		printStatus();
+		//printStatus();
 		
 	}
 	
@@ -200,7 +196,7 @@ public class TestBot extends TeamRobot {
 	 * Executes the specified movement pattern
 	 * @param pattern the movement pattern that should be executed
 	 */
-	private void RunMovementPattern(MovementPattern pattern) {
+	private void runMovementPattern(MovementPattern pattern) {
 		movePattern = pattern;
 		
 		
@@ -208,7 +204,7 @@ public class TestBot extends TeamRobot {
 		// Pattern Eight
 		if(pattern == MovementPattern.Eight) {
 			
-			if(count < 40) {
+			if(count < 80) {
 				setTurnRight(turnDirection * 45);
 				setAhead(10);
 			} else {
@@ -217,7 +213,7 @@ public class TestBot extends TeamRobot {
 			}
 					
 			count++;
-			if(count == 100) {
+			if(count == 160) {
 				count = 0;
 			}
 			return;
@@ -277,11 +273,11 @@ public class TestBot extends TeamRobot {
 	 */
 	public void printStatus() {
 		System.out.println("---------------------------------------------------------");
-		System.out.println("Current MovementPattern: " + movePattern.name() + "\n" + 
-							"Count: " + count + "\n" +
-							"Attacker: " + attacker.getName() + "\n" +
-							"Target: " + target.getName() + "\n" + 
-							"State: " + state);
+		System.out.println("Current MovementPattern: " + movePattern.name());
+		System.out.println("Count: " + count);
+		System.out.println("Target: " + target.getName());
+		System.out.println("Attacker: " + attacker.getName());
+		System.out.println("State: " + state);							
 		System.out.println("Shots Fired: " + (shotsHit + shotsMissed));
 		System.out.println("Shots Hits: " + shotsHit);
 	    System.out.println("Shots Missed: " + shotsMissed);
@@ -300,41 +296,44 @@ public class TestBot extends TeamRobot {
 	public void update(ScannedRobotEvent robot) {
 		
 		// Scan energy
-		if (target != null) {
+		if (!(target.getName().equals("None")) && target.getName().equals(robot.getName()))  {
 			double enemyDeltaEnergy = target.getInfo().getEnergy() - robot.getEnergy();
 			if(enemyDeltaEnergy > 0) {
 				avoidBullet(enemyDeltaEnergy);				
 			}
 		}
 				
-		for(int i = 0; i < N; i++) {
-			// Update robot
-			if(enemies[i] == null) {
-				continue;
-			}
-			if( enemies[i].getName().equals(robot.getName())) {
-				enemies[i].init(robot);
-				if(target == null || !lockTarget) {
-					target = enemies[i];
-				}				
-				return;
-			}
-		}
-		
-		// Add not existing robot
-		for(int i = 0; i < N; i++) {
-			if(enemies[i] == null) {
-				continue;
-			}
-			if(enemies[i].getName().equals("None")) {
-				enemies[i].init(robot);
-				if(target == null || !lockTarget) {
-					target = enemies[i];
-				}				
-				return;
+		// Update robot
+		if(enemies != null) {			
+			for(int i = 0; i < enemies.length; i++) {			
+				if(enemies[i] == null) {
+					continue;
+				}
+				if( enemies[i].getName().equals(robot.getName())) {
+					enemies[i].init(robot);							
+					return;
+				}
 			}
 		}
 		
+		
+		// Add not existing robot		
+		int n = 0;
+		if(enemies == null) {
+			n = 1;
+		} else {
+			n = enemies.length + 1;
+		}
+		EnemyBot[] newEnemies = new EnemyBot[n];
+		
+		for(int i = 0; i < n - 1; i++) {
+			if(enemies[i] != null) {
+				newEnemies[i] = enemies[i];
+			}
+		}
+		newEnemies[n - 1] = new EnemyBot();
+		newEnemies[n - 1].init(robot);
+		enemies = newEnemies;
 	}
 	
 	/**
@@ -371,6 +370,7 @@ public class TestBot extends TeamRobot {
 	private boolean avoidWalls() {
 		// TODO: consider moveDirection!
 		// TODO: consider velocity for detection
+		// TODO: block other movement
 		double fieldWith = getBattleFieldWidth();
 		double fieldHeight = getBattleFieldHeight();
 		double avoidDistance = 120;
@@ -384,9 +384,9 @@ public class TestBot extends TeamRobot {
 			// going to hit east wall
 			avoidWall = AvoidWall.East;
 			if (this.getHeading() > 0 && this.getHeading() <= 90)
-				turnLeft(turnDegree);
+				setTurnLeft(turnDegree);
 			else if (this.getHeading() > 90 && this.getHeading() <= 180)
-				turnRight(turnDegree);
+				setTurnRight(turnDegree);
 			else
 				avoidWall = AvoidWall.None;
 			return true;
@@ -397,7 +397,7 @@ public class TestBot extends TeamRobot {
 			if (this.getHeading() > 270 && this.getHeading() <= 360)
 				turnRight(turnDegree);
 			else if (this.getHeading() > 180 && this.getHeading() <= 270)
-				turnLeft(turnDegree);
+				setTurnLeft(turnDegree);
 			else
 				avoidWall = AvoidWall.None;
 			return true;
@@ -406,9 +406,9 @@ public class TestBot extends TeamRobot {
 			// going to hit north wall
 			avoidWall = AvoidWall.North;
 			if (this.getHeading() > 270 && this.getHeading() <= 360)
-				turnLeft(turnDegree);
+				setTurnLeft(turnDegree);
 			else if (this.getHeading() > 0 && this.getHeading() <= 90)
-				turnRight(turnDegree);
+				setTurnRight(turnDegree);
 			else
 				avoidWall = AvoidWall.None;
 			return true;
@@ -417,9 +417,9 @@ public class TestBot extends TeamRobot {
 			// going to hit south wall
 			avoidWall = AvoidWall.South;
 			if (this.getHeading() > 90 && this.getHeading() <= 180)
-				turnLeft(turnDegree);
+				setTurnLeft(turnDegree);
 			else if (this.getHeading() > 180 && this.getHeading() <= 270)
-				turnRight(turnDegree);
+				setTurnRight(turnDegree);
 			else
 				avoidWall = AvoidWall.None;
 			return true;
@@ -444,8 +444,52 @@ public class TestBot extends TeamRobot {
 		moveDirection *= -1;
 		Random rand = new Random();
 		int rnd = rand.nextInt(6) + 3;
-		setMaxVelocity(rnd);
-		
+		setMaxVelocity(rnd);		
 	}
+	
+	/**
+	 * Make sure our radar locks on our current target
+	 */
+	private void lockRadarOnTarget() {
+		
+		if(target.getName().equals("None")) {
+			return;
+		}	
+		
+		double angleToEnemy = getHeading() + target.getInfo().getBearing();
+		
+		System.out.println("--------------");
+		System.out.println("Bearing: " + target.getInfo().getBearing());
+		System.out.println("Own Heading: " + getHeading());
+		System.out.println("Angle to Enemy: " + angleToEnemy);		
+		double radarTurn = Utils.normalRelativeAngleDegrees(angleToEnemy - getRadarHeading());
+		
+		System.out.println("Radar Turn: " + radarTurn);
+		System.out.println("Current Radar: " + getRadarHeading());
+		System.out.println("Remaining: " + getRadarTurnRemaining());
+		System.out.println("--------------");
+		setTurnRadarRight(radarTurn);
+			
+	}
+	
+	/**
+	 * Finds a target among all spotted enemies
+	 */
+	private void findTarget() {
+		
+		if(enemies == null) {
+			return;
+		}
+		
+		target = enemies[0];
+		
+		for(int i = 0; i < enemies.length; i++ ) {
+			if(target.getInfo().getDistance() > enemies[i].getInfo().getDistance()) {
+				target = enemies[i];
+			}
+		}
+		
+	}	
+	
 
 }
