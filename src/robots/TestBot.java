@@ -25,7 +25,7 @@ public class TestBot extends TeamRobot {
 	private int moveDirection = 1;// >0 : turn right, <0 : tun left
 	private int turnDirection = 1;
 	private int count = 0; // Count for movement patterns
-	private double EnergyThreshold = 35;
+	private double EnergyThreshold = 15;
 	private boolean resetMovement = true;
 	
 	private State state = State.Spotting;
@@ -45,6 +45,8 @@ public class TestBot extends TeamRobot {
 	private int shotsMissed = 0;
 
 	private boolean bulletHit;
+
+	private boolean hitRobot;
 	
 	public void run() {	
 		
@@ -104,6 +106,23 @@ public class TestBot extends TeamRobot {
 		}
 	}
 	
+	public void onHitRobot(HitRobotEvent event) {
+		hitRobot = true;
+	}
+	
+	public void onRobotDeath(RobotDeathEvent event) {
+		// Remove robot from enemies array
+		for(int i = 0; i < enemies.length; i++) {
+			if(enemies[i].getName().equals(event.getName())) {
+				enemies[i] = null;
+				return;
+			}
+		}
+		if(target.getName().equals(event.getName())) {
+			// TODO: Assign new target
+		}
+	}
+	
 	public void onHitWall(HitWallEvent event) {		
 		
 		if(movePattern == MovementPattern.UpAndDown) {
@@ -140,8 +159,11 @@ public class TestBot extends TeamRobot {
 		
 		// Execute behavior for corresponding state		
 		if(state == State.Attacking) {
+			// TODO: 
+			// Bad 
 			target = enemies[0];		
-						
+			
+			// TODO: find target
 			fireGun(target);		
 			
 			
@@ -170,7 +192,7 @@ public class TestBot extends TeamRobot {
 			
 		}
 		
-		//printStatus();
+		printStatus();
 		
 	}
 	
@@ -286,7 +308,10 @@ public class TestBot extends TeamRobot {
 		}
 				
 		for(int i = 0; i < N; i++) {
-			// Update robot			
+			// Update robot
+			if(enemies[i] == null) {
+				continue;
+			}
 			if( enemies[i].getName().equals(robot.getName())) {
 				enemies[i].init(robot);
 				if(target == null || !lockTarget) {
@@ -298,6 +323,9 @@ public class TestBot extends TeamRobot {
 		
 		// Add not existing robot
 		for(int i = 0; i < N; i++) {
+			if(enemies[i] == null) {
+				continue;
+			}
 			if(enemies[i].getName().equals("None")) {
 				enemies[i].init(robot);
 				if(target == null || !lockTarget) {
@@ -311,13 +339,14 @@ public class TestBot extends TeamRobot {
 	
 	/**
 	 * Fires the tank's gun. Uses linear targeting and gun power dependent on distance between tank and enemy
-	 * @param target
+	 * @param target the robot we want to shoot
 	 */
 	private void fireGun(EnemyBot target) {
 		ScannedRobotEvent enemy = target.getInfo();
 		double absBearing = enemy.getBearing() + getHeading();
 		double gunTurnAmt;
 		
+		// TODO: Skip linear targeting if enemy is too close
 		// Calculate enemie's lateral velocity
 		double latVel = enemy.getVelocity() * Math.sin(enemy.getHeadingRadians() - Math.toRadians(absBearing));
 				
@@ -340,6 +369,8 @@ public class TestBot extends TeamRobot {
 	 * @return true, if wall will be hit. Otherwise false.
 	 */
 	private boolean avoidWalls() {
+		// TODO: consider moveDirection!
+		// TODO: consider velocity for detection
 		double fieldWith = getBattleFieldWidth();
 		double fieldHeight = getBattleFieldHeight();
 		double avoidDistance = 120;
@@ -397,15 +428,23 @@ public class TestBot extends TeamRobot {
 	}
 	
 	/**
-	 * Tries to figure out if enemy tank shots at us and starts evasive maneuver if  
+	 * Tries to figure out if enemy tank shoots at us and starts evasive maneuver if  
 	 * @param deltaEnergy the energy the enemy tank lost between last and current turn
 	 */
 	private void avoidBullet(double deltaEnergy) {
 		
-		if(deltaEnergy <= 3 || bulletHit) {
-			System.out.println("AVOID: " + deltaEnergy);
+		if(deltaEnergy > 3 || bulletHit || hitRobot) {
 			bulletHit = false;
+			hitRobot = false;
+			return;
 		}
+		
+		// TODO: 
+		System.out.println("AVOID: " + deltaEnergy);			
+		moveDirection *= -1;
+		Random rand = new Random();
+		int rnd = rand.nextInt(6) + 3;
+		setMaxVelocity(rnd);
 		
 	}
 
