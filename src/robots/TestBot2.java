@@ -14,12 +14,6 @@ enum AvoidWall {
 	West, North, East, South, None;
 }
 
-// Idee: 
-//	Bots beobachten. 
-//		Wenn sie stehen => normal schießen
-//		wenn sie sich bewegen => mit trigonometrie zukünftigen
-//			standort berechnen und dort hin schießen
-
 public class TestBot2 extends AdvancedRobot {
 	private double lastRobotDistance;
 	private String lastRobotName;
@@ -58,7 +52,11 @@ public class TestBot2 extends AdvancedRobot {
 			absBearing = e.getBearing() + getHeading();
 		}
 	}
-
+/**
+ * 	calc needed fire power from distance and life of the enemy
+ * 
+ * @param e ScannedRobotEvent
+ */
 	private void fireBullet(ScannedRobotEvent e) {
 		double firePower = 400 / e.getDistance();
 		if (firePower > calcFirePowerLife(e)) {
@@ -92,7 +90,13 @@ public class TestBot2 extends AdvancedRobot {
 		avoidWalls();
 		setAhead(moveDirection * 20);
 	}
-
+/**
+ * calc the minimal fire power needed to kill the enemy (max MAX_BULLET_POWER)
+ * 
+ * @param e ScannedRobotEvent
+ * @return fire power
+ */
+	
 	private double calcFirePowerLife(ScannedRobotEvent e) {
 		double firePower = Rules.MIN_BULLET_POWER;
 		@SuppressWarnings("deprecation")
@@ -161,6 +165,18 @@ public class TestBot2 extends AdvancedRobot {
 				avoidWall = AvoidWall.None;
 			return true;
 		}
+		return false;
+	}
+	
+	/**
+	 * To separate avoid and detection (problems with movement otherwise)
+	 * (TODO)
+	 * @return true if you will hit the wall soon
+	 */
+	
+	private boolean detectCloseWall(){
+		//TODO
+		
 		return false;
 	}
 }
