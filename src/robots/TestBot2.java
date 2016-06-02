@@ -3,6 +3,7 @@ package robots;
 import static robocode.util.Utils.normalRelativeAngleDegrees;
 
 import java.awt.Color;
+
 import robocode.AdvancedRobot;
 import robocode.HitWallEvent;
 import robocode.RobotDeathEvent;
@@ -18,7 +19,7 @@ public class TestBot2 extends AdvancedRobot {
 	private double lastRobotDistance;
 	private String lastRobotName;
 	private boolean lastRobotDied = false;
-	private double moveDirection = 1;
+	private double moveDirection = -1;
 	private AvoidWall avoidWall = AvoidWall.None;
 
 	public void run() {
@@ -87,7 +88,8 @@ public class TestBot2 extends AdvancedRobot {
 
 	public void onStatus(StatusEvent event) {
 		// TODO
-		avoidWalls();
+		detectCloseWall();
+		avoidWall();
 		setAhead(moveDirection * 20);
 	}
 /**
@@ -111,55 +113,44 @@ public class TestBot2 extends AdvancedRobot {
 		return firePower;
 	}
 
-	private boolean avoidWalls() {
-		double fieldWith = getBattleFieldWidth();
-		double fieldHeight = getBattleFieldHeight();
-		double avoidDistance = 120;
-		double turnDegree = 15;
-		double xDist = getX() + Math.sin(Math.toRadians(this.getHeading()))
-				* avoidDistance;
-		double yDist = getY() + Math.cos(Math.toRadians(this.getHeading()))
-				* avoidDistance;
+	private boolean avoidWall() {
+		double turnDegree = 10;
+		double heading = this.getHeading();
 
-		if (xDist >= fieldWith - 36 || avoidWall == AvoidWall.East) {
-			// going to hit east wall
-			avoidWall = AvoidWall.East;
-			if (this.getHeading() > 0 && this.getHeading() <= 90)
+		if (moveDirection != 1) {
+			heading = (heading + 180) % 360;
+		}
+		if (avoidWall == AvoidWall.East) {
+			if (heading > 0 && heading <= 90)
 				turnLeft(turnDegree);
-			else if (this.getHeading() > 90 && this.getHeading() <= 180)
+			else if (heading > 90 && heading <= 180)
 				turnRight(turnDegree);
 			else
 				avoidWall = AvoidWall.None;
 			return true;
 		}
-		if (xDist <= 18 || avoidWall == AvoidWall.West) {
-			// going to hit west wall
-			avoidWall = AvoidWall.West;
-			if (this.getHeading() > 270 && this.getHeading() <= 360)
+		if (avoidWall == AvoidWall.West) {
+			if (heading > 270 && heading <= 360)
 				turnRight(turnDegree);
-			else if (this.getHeading() > 180 && this.getHeading() <= 270)
+			else if (heading > 180 && heading <= 270)
 				turnLeft(turnDegree);
 			else
 				avoidWall = AvoidWall.None;
 			return true;
 		}
-		if (yDist >= fieldHeight - 36 || avoidWall == AvoidWall.North) {
-			// going to hit north wall
-			avoidWall = AvoidWall.North;
-			if (this.getHeading() > 270 && this.getHeading() <= 360)
+		if (avoidWall == AvoidWall.North) {
+			if (heading > 270 && heading <= 360)
 				turnLeft(turnDegree);
-			else if (this.getHeading() > 0 && this.getHeading() <= 90)
+			else if (heading > 0 && heading <= 90)
 				turnRight(turnDegree);
 			else
 				avoidWall = AvoidWall.None;
 			return true;
 		}
-		if (yDist <= 18 || avoidWall == AvoidWall.South) {
-			// going to hit south wall
-			avoidWall = AvoidWall.South;
-			if (this.getHeading() > 90 && this.getHeading() <= 180)
+		if (avoidWall == AvoidWall.South) {
+			if (heading > 90 && heading <= 180)
 				turnLeft(turnDegree);
-			else if (this.getHeading() > 180 && this.getHeading() <= 270)
+			else if (heading > 180 && heading <= 270)
 				turnRight(turnDegree);
 			else
 				avoidWall = AvoidWall.None;
@@ -167,16 +158,49 @@ public class TestBot2 extends AdvancedRobot {
 		}
 		return false;
 	}
-	
+
 	/**
 	 * To separate avoid and detection (problems with movement otherwise)
-	 * (TODO)
+	 * 
 	 * @return true if you will hit the wall soon
 	 */
-	
-	private boolean detectCloseWall(){
-		//TODO
-		
+
+	private boolean detectCloseWall() {
+		double fieldWith = getBattleFieldWidth();
+		double fieldHeight = getBattleFieldHeight();
+		double avoidDistance = 100;
+
+		double heading = this.getHeading();
+
+		if (moveDirection != 1) {
+			heading = (heading + 180) % 360;
+		}
+
+		double xDist = getX() + Math.sin(Math.toRadians(heading))
+				* avoidDistance;
+		double yDist = getY() + Math.cos(Math.toRadians(heading))
+				* avoidDistance;
+
+		if (xDist >= fieldWith - 36 || avoidWall == AvoidWall.East) {
+			// going to hit east wall
+			avoidWall = AvoidWall.East;
+			return true;
+		}
+		if (xDist <= 18 || avoidWall == AvoidWall.West) {
+			// going to hit west wall
+			avoidWall = AvoidWall.West;
+			return true;
+		}
+		if (yDist >= fieldHeight - 36 || avoidWall == AvoidWall.North) {
+			// going to hit north wall
+			avoidWall = AvoidWall.North;
+			return true;
+		}
+		if (yDist <= 18 || avoidWall == AvoidWall.South) {
+			// going to hit south wall
+			avoidWall = AvoidWall.South;
+			return true;
+		}
 		return false;
 	}
 }

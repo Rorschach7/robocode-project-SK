@@ -2,8 +2,10 @@ package robots;
 
 import robocode.*;
 import static robocode.util.Utils.*;
+
 import java.awt.Color;
 import java.util.Random;
+
 import robocode.ScannedRobotEvent;
 import robocode.util.Utils;
 
@@ -19,7 +21,7 @@ enum RadarState {
 	Lock, Sweep, FullScan
 }
 
-public class TestBot extends TeamRobot {
+public class TestBot extends TeamRobot {	
 	
 	// Variables	
 	private boolean gameOver = false;
@@ -37,12 +39,12 @@ public class TestBot extends TeamRobot {
 	// Time Handles in rounds	
 	private double scanElapsedTime;	
 	private double scanTimer = 10; // time elapses between scans	
-	
+
 	private EnemyBot[] enemies;
 	private EnemyBot attacker = new EnemyBot(); // Robot which last attacked us
 	private EnemyBot target = new EnemyBot();
 	private AvoidWall avoidWall;
-	
+
 	// Statistics
 	private int shotsHit = 0;
 	private int shotsMissed = 0;
@@ -67,11 +69,10 @@ public class TestBot extends TeamRobot {
 		state = State.Scanning;	
 		
 		while(true) {
-			scan();
+			scan();	
 		}
+	}	
 		
-	}
-	
 	public void onScannedRobot(ScannedRobotEvent e) {
 		update(e);
 		
@@ -90,13 +91,7 @@ public class TestBot extends TeamRobot {
 				isEnemyLocked = true;
 				
 				runScan(RadarState.Lock);
-
-//				// Lock on
-//				double angleToEnemy = getHeading() + target.getInfo().getBearing();
-//
-//				double radarTurn = Utils.normalRelativeAngleDegrees(angleToEnemy - getRadarHeading());
-//
-//				setTurnRadarRight(radarTurn);					
+								
 			}
 		}
 		
@@ -108,24 +103,25 @@ public class TestBot extends TeamRobot {
 //		}		
 //		System.out.println("---End---");		
 	
+
 	}
-	
+
 	public void onHitByBullet(HitByBulletEvent event) {
 		attacker.init(event);
-		
-		if(getEnergy() <= EnergyThreshold) {
+
+		if (getEnergy() <= EnergyThreshold) {
 			state = State.Evading;
 		}
 	}
-	
+
 	public void onHitRobot(HitRobotEvent event) {
 		hitRobot = true;
 	}
-	
+
 	public void onRobotDeath(RobotDeathEvent event) {
 		// Remove robot from enemies array
-		for(int i = 0; i < enemies.length; i++) {
-			if(enemies[i].getName().equals(event.getName())) {
+		for (int i = 0; i < enemies.length; i++) {
+			if (enemies[i].getName().equals(event.getName())) {
 				enemies[i] = null;
 				return;
 			}
@@ -133,58 +129,64 @@ public class TestBot extends TeamRobot {
 		
 		if(target.getName().equals(event.getName())) {
 			findTarget();
+
 		}
 	}
-	
-	public void onHitWall(HitWallEvent event) {		
-		
-		if(movePattern == MovementPattern.UpAndDown) {
+
+	public void onHitWall(HitWallEvent event) {
+
+		if (movePattern == MovementPattern.UpAndDown) {
 			moveDirection *= -1;
 			setAhead(moveDirection * 5);
 		}
 	}
-		
+
 	public void onBulletMissed(BulletMissedEvent event) {
-	    shotsMissed++;
+		shotsMissed++;
 	}
-	
-	public void onBulletHit(BulletHitEvent event) {	      
+
+	public void onBulletHit(BulletHitEvent event) {
 		shotsHit++;
 		bulletHit = true;
-   }
-	
+	}
+
 	public void onRoundEnded(RoundEndedEvent event) {
 		// TODO: Victory Dance
+
 		gameOver = true;
-   }
-	
+   }	
+
 	public void onStatus(StatusEvent event) {
 		if(gameOver) {
 			return;
-		}
-		
+		}	
+
 		// Increment Time Handler
-		if(!scanStarted) {
+		if (!scanStarted) {
 			scanElapsedTime++;
 		}		
-		
-		// Periodic scan	
-		if(scanElapsedTime >= scanTimer) {
-			if(enemies != null && enemies.length > 1) {
+
+		// Periodic scan
+		if (scanElapsedTime >= scanTimer) {
+			if (enemies != null && enemies.length > 1) {
+
 				state = State.Scanning;
-			}			
+			}
 			scanElapsedTime = 0;
-		}		
+		}
 		
-				
+
+
 		// Avoid walls
-		avoidWalls();		
-		
-		// Execute behavior for corresponding state		
-		if(state == State.Attacking) {
-			
+		detectCloseWall();
+		avoidWall();
+
+		// Execute behavior for corresponding state
+		if (state == State.Attacking) {
+
 			// Find Target
 			findTarget();
+
 			
 			// Radar Scanning
 				// FullScan finished, start sweep scan
@@ -212,102 +214,101 @@ public class TestBot extends TeamRobot {
 			
 			//runMovementPattern(MovementPattern.UpAndDown);
 			
-			runScan(RadarState.FullScan);
+			runScan(RadarState.FullScan);			
 		}
-		
-		if(state == State.Evading) {
+
+		if (state == State.Evading) {
 			// TODO:
 			// Implement anti gravity stuff here
 			// Or short evasive maneuver
 			runMovementPattern(MovementPattern.Stop);
-			
+
 		}
 		
-		//printStatus();
+		printStatus();
 		isEnemyLocked = false;		
 	}
-	
+
 	/**
 	 * Executes the specified movement pattern
-	 * @param pattern the movement pattern that should be executed
+	 * 
+	 * @param pattern
+	 *            the movement pattern that should be executed
 	 */
 	private void runMovementPattern(MovementPattern pattern) {
 		movePattern = pattern;
-		
-		
-		
+
 		// Pattern Eight
-		if(pattern == MovementPattern.Eight) {
-			
-			if(count < 80) {
+		if (pattern == MovementPattern.Eight) {
+
+			if (count < 80) {
 				setTurnRight(turnDirection * 45);
 				setAhead(10);
 			} else {
 				setTurnRight(turnDirection * -45);
 				setAhead(10);
 			}
-					
+
 			count++;
-			if(count == 160) {
+			if (count == 160) {
 				count = 0;
 			}
 			return;
-		}	
-		
-		// Pattern Circle 
-		if(pattern == MovementPattern.Circle) {
-			
+		}
+
+		// Pattern Circle
+		if (pattern == MovementPattern.Circle) {
+
 			setTurnRight(turnDirection * 10);
-			setAhead(10);			
-					
+			setAhead(10);
+
 			count++;
-			if(count == 100) {
+			if (count == 100) {
 				count = 0;
 			}
 			return;
 		}
-		
+
 		// Pattern Scanning
-		if(pattern == MovementPattern.Scanning) {
-			
+		if (pattern == MovementPattern.Scanning) {
+
 			setTurnRight(10);
-			setAhead(35);			
-					
+			setAhead(35);
+
 			count++;
-			if(count == 100) {
+			if (count == 100) {
 				count = 0;
 			}
 			return;
 		}
-		
+
 		// Pattern Approaching
-		if(pattern == MovementPattern.Approach) {
-			
-			
-			
+		if (pattern == MovementPattern.Approach) {
+
 		}
-		
+
 		// Pattern Stop
-		if(pattern == MovementPattern.Stop) {
-			
+		if (pattern == MovementPattern.Stop) {
+
 			// Do nothing
-			
+
 		}
-		
+
 		// Pattern Up and Down
-		if(pattern == MovementPattern.UpAndDown) {
-			
+		if (pattern == MovementPattern.UpAndDown) {
+
 			setAhead(moveDirection * 10);
-			
+
 		}
-		
+
 	}
-	
+
 	/**
 	 * Prints current status information
 	 */
 	public void printStatus() {
-		System.out.println("---------------------------------------------------------");
+		System.out
+				.println("---------------------------------------------------------");
 		System.out.println("Current MovementPattern: " + movePattern.name());
 		System.out.println("Count: " + count);
 		System.out.println("Target: " + target.getName());
@@ -316,53 +317,58 @@ public class TestBot extends TeamRobot {
 		System.out.println("RadarState: " + radarState);
 		System.out.println("Shots Fired: " + (shotsHit + shotsMissed));
 		System.out.println("Shots Hits: " + shotsHit);
-	    System.out.println("Shots Missed: " + shotsMissed);
-	    double acc = 0;
-	    if((shotsHit + shotsMissed) != 0) {
-	    	acc = shotsHit / (shotsHit + shotsMissed) * 100;
-	    }	    
-	    System.out.println("Accuracy: " + acc);
-		System.out.println("---------------------------------------------------------");
+		System.out.println("Shots Missed: " + shotsMissed);
+		double acc = 0;
+		if ((shotsHit + shotsMissed) != 0) {
+			acc = shotsHit / (shotsHit + shotsMissed) * 100;
+		}
+		System.out.println("Accuracy: " + acc);
+		System.out
+				.println("---------------------------------------------------------");
 	}
-	
+
 	/**
 	 * Updates the enemies array
-	 * @param robot the robot that should be updated
+	 * 
+	 * @param robot
+	 *            the robot that should be updated
 	 */
-	public void update(ScannedRobotEvent robot) {		
+
+	public void update(ScannedRobotEvent robot) {	
 		// Scan energy
-		if (!(target.getName().equals("None")) && target.getName().equals(robot.getName()))  {
-			double enemyDeltaEnergy = target.getInfo().getEnergy() - robot.getEnergy();
-			if(enemyDeltaEnergy > 0) {
-				avoidBullet(enemyDeltaEnergy);				
+		if (!(target.getName().equals("None"))
+				&& target.getName().equals(robot.getName())) {
+			double enemyDeltaEnergy = target.getInfo().getEnergy()
+					- robot.getEnergy();
+			if (enemyDeltaEnergy > 0) {
+				avoidBullet(enemyDeltaEnergy);
 			}
 		}
-				
+
 		// Update robot
-		if(enemies != null) {			
-			for(int i = 0; i < enemies.length; i++) {			
-				if(enemies[i] == null) {
+		if (enemies != null) {
+			for (int i = 0; i < enemies.length; i++) {
+				if (enemies[i] == null) {
 					continue;
 				}
-				if( enemies[i].getName().equals(robot.getName())) {
-					enemies[i].init(robot);							
+				if (enemies[i].getName().equals(robot.getName())) {
+					enemies[i].init(robot);
 					return;
 				}
 			}
 		}
-		
-		
-		// Add not existing robot		
+
+		// Add not existing robot
 		int n = 0;
-		if(enemies == null) {
+		if (enemies == null) {
 			n = 1;
 		} else {
 			n = enemies.length + 1;
 		}
 		EnemyBot[] newEnemies = new EnemyBot[n];
-		
-		for(int i = 0; i < n - 1; i++) {
-			if(enemies[i] != null) {
+
+		for (int i = 0; i < n - 1; i++) {
+			if (enemies[i] != null) {
 				newEnemies[i] = enemies[i];
 			}
 		}
@@ -370,105 +376,151 @@ public class TestBot extends TeamRobot {
 		newEnemies[n - 1].init(robot);
 		enemies = newEnemies;
 	}
-	
+
 	/**
-	 * Fires the tank's gun. Uses linear targeting and gun power dependent on distance between tank and enemy
-	 * @param target the robot we want to shoot
+	 * Fires the tank's gun. Uses linear targeting and gun power dependent on
+	 * distance between tank and enemy
+	 * 
+	 * @param target
+	 *            the robot we want to shoot
 	 */
 	private void fireGun(EnemyBot target) {
 		ScannedRobotEvent enemy = target.getInfo();
 		double absBearing = enemy.getBearing() + getHeading();
 		double gunTurnAmt;
-		
+
 		// TODO: Skip linear targeting if enemy is too close
 		// Calculate enemie's lateral velocity
-		double latVel = enemy.getVelocity() * Math.sin(enemy.getHeadingRadians() - Math.toRadians(absBearing));
-				
+		double latVel = enemy.getVelocity()
+				* Math.sin(enemy.getHeadingRadians()
+						- Math.toRadians(absBearing));
+
 		double bulletSpeed = 20 - 3 * (400 / target.getInfo().getDistance());
-		
-		gunTurnAmt = normalRelativeAngleDegrees(absBearing - getGunHeading() + ((latVel / bulletSpeed) * 57.3) );
+
+		gunTurnAmt = normalRelativeAngleDegrees(absBearing - getGunHeading()
+				+ ((latVel / bulletSpeed) * 57.3));
 		setTurnGunRight(gunTurnAmt); // Turn gun
-		
-		if(target.getInfo().getDistance() < 600 && getEnergy() > EnergyThreshold) {				
-			if(Math.abs(getGunTurnRemaining()) <= 5) { // Don't shoot before gun is adjusted
+
+		if (target.getInfo().getDistance() < 600
+				&& getEnergy() > EnergyThreshold) {
+			if (Math.abs(getGunTurnRemaining()) <= 5) { // Don't shoot before
+														// gun is adjusted
 				setFire(400 / target.getInfo().getDistance());
-				//System.out.println("FIRE");
-			}				
-		}	
+				// System.out.println("FIRE");
+			}
+		}
 		return;
 	}
-	
+
 	/**
-	 * Calculates future position and checks whether the tank will collide with a wall or not.
+	 * Calculates future position and checks whether the tank will collide with
+	 * a wall or not.
+	 * 
 	 * @return true, if wall will be hit. Otherwise false.
 	 */
-	private boolean avoidWalls() {
-		// TODO: consider moveDirection!
+	private boolean avoidWall() {
 		// TODO: consider velocity for detection
 		// TODO: block other movement
-		double fieldWith = getBattleFieldWidth();
-		double fieldHeight = getBattleFieldHeight();
-		double avoidDistance = 120;
-		double turnDegree = 15;
-		double xDist = getX() + Math.sin(Math.toRadians(this.getHeading()))
-				* avoidDistance;
-		double yDist = getY() + Math.cos(Math.toRadians(this.getHeading()))
-				* avoidDistance;
+		double turnDegree = 10;
+		double heading = this.getHeading();
 
-		if (xDist >= fieldWith - 36 || avoidWall == AvoidWall.East) {
-			// going to hit east wall
-			avoidWall = AvoidWall.East;
-			if (this.getHeading() > 0 && this.getHeading() <= 90)
-				setTurnLeft(turnDegree);
-			else if (this.getHeading() > 90 && this.getHeading() <= 180)
-				setTurnRight(turnDegree);
-			else
-				avoidWall = AvoidWall.None;
-			return true;
+		if (moveDirection != 1) {
+			heading = (heading + 180) % 360;
 		}
-		if (xDist <= 18 || avoidWall == AvoidWall.West) {
-			// going to hit west wall
-			avoidWall = AvoidWall.West;
-			if (this.getHeading() > 270 && this.getHeading() <= 360)
+		if (avoidWall == AvoidWall.East) {
+			if (heading > 0 && heading <= 90)
+				turnLeft(turnDegree);
+			else if (heading > 90 && heading <= 180)
 				turnRight(turnDegree);
-			else if (this.getHeading() > 180 && this.getHeading() <= 270)
-				setTurnLeft(turnDegree);
 			else
 				avoidWall = AvoidWall.None;
 			return true;
 		}
-		if (yDist >= fieldHeight - 36 || avoidWall == AvoidWall.North) {
-			// going to hit north wall
-			avoidWall = AvoidWall.North;
-			if (this.getHeading() > 270 && this.getHeading() <= 360)
-				setTurnLeft(turnDegree);
-			else if (this.getHeading() > 0 && this.getHeading() <= 90)
-				setTurnRight(turnDegree);
+		if (avoidWall == AvoidWall.West) {
+			if (heading > 270 && heading <= 360)
+				turnRight(turnDegree);
+			else if (heading > 180 && heading <= 270)
+				turnLeft(turnDegree);
 			else
 				avoidWall = AvoidWall.None;
 			return true;
 		}
-		if (yDist <= 18 || avoidWall == AvoidWall.South) {
-			// going to hit south wall
-			avoidWall = AvoidWall.South;
-			if (this.getHeading() > 90 && this.getHeading() <= 180)
-				setTurnLeft(turnDegree);
-			else if (this.getHeading() > 180 && this.getHeading() <= 270)
-				setTurnRight(turnDegree);
+		if (avoidWall == AvoidWall.North) {
+			if (heading > 270 && heading <= 360)
+				turnLeft(turnDegree);
+			else if (heading > 0 && heading <= 90)
+				turnRight(turnDegree);
+			else
+				avoidWall = AvoidWall.None;
+			return true;
+		}
+		if (avoidWall == AvoidWall.South) {
+			if (heading > 90 && heading <= 180)
+				turnLeft(turnDegree);
+			else if (heading > 180 && heading <= 270)
+				turnRight(turnDegree);
 			else
 				avoidWall = AvoidWall.None;
 			return true;
 		}
 		return false;
 	}
-	
+
 	/**
-	 * Tries to figure out if enemy tank shoots at us and starts evasive maneuver if  
-	 * @param deltaEnergy the energy the enemy tank lost between last and current turn
+	 * To separate avoid and detection (problems with movement otherwise)
+	 * 
+	 * @return true if you will hit the wall soon
+	 */
+
+	private boolean detectCloseWall() {
+		double fieldWith = getBattleFieldWidth();
+		double fieldHeight = getBattleFieldHeight();
+		double avoidDistance = 100;
+
+		double heading = this.getHeading();
+
+		if (moveDirection != 1) {
+			heading = (heading + 180) % 360;
+		}
+
+		double xDist = getX() + Math.sin(Math.toRadians(heading))
+				* avoidDistance;
+		double yDist = getY() + Math.cos(Math.toRadians(heading))
+				* avoidDistance;
+
+		if (xDist >= fieldWith - 36 || avoidWall == AvoidWall.East) {
+			// going to hit east wall
+			avoidWall = AvoidWall.East;
+			return true;
+		}
+		if (xDist <= 18 || avoidWall == AvoidWall.West) {
+			// going to hit west wall
+			avoidWall = AvoidWall.West;
+			return true;
+		}
+		if (yDist >= fieldHeight - 36 || avoidWall == AvoidWall.North) {
+			// going to hit north wall
+			avoidWall = AvoidWall.North;
+			return true;
+		}
+		if (yDist <= 18 || avoidWall == AvoidWall.South) {
+			// going to hit south wall
+			avoidWall = AvoidWall.South;
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Tries to figure out if enemy tank shoots at us and starts evasive
+	 * maneuver if
+	 * 
+	 * @param deltaEnergy
+	 *            the energy the enemy tank lost between last and current turn
 	 */
 	private void avoidBullet(double deltaEnergy) {
-		
-		if(deltaEnergy > 3 || bulletHit || hitRobot) {
+
+		if (deltaEnergy > 3 || bulletHit || hitRobot) {
 			bulletHit = false;
 			hitRobot = false;
 			return;
@@ -477,22 +529,23 @@ public class TestBot extends TeamRobot {
 		// Check if enemy hit a wall
 		// TODO:	
 		
-		System.out.println("AVOID: " + deltaEnergy);			
-		moveDirection *= -1;
-		Random rand = new Random();
-		int rnd = rand.nextInt(6) + 3;
-		setMaxVelocity(rnd);		
+		System.out.println("AVOID: " + deltaEnergy);
+
+//		moveDirection *= -1;
+//		Random rand = new Random();
+//		int rnd = rand.nextInt(6) + 3;
+//		setMaxVelocity(rnd);
 	}
-		
+	
 	/**
 	 * Finds a target among all spotted enemies
 	 */
 	private void findTarget() {
-		
-		if(enemies == null) {
+
+		if (enemies == null) {
 			return;
 		}
-		
+
 		target = enemies[0];
 		
 		// Find closest enemy
@@ -509,7 +562,7 @@ public class TestBot extends TeamRobot {
 	
 	private void runScan(RadarState scan) {				
 				
-		System.out.println("RunScan: " + scan);
+		//System.out.println("RunScan: " + scan);
 		
 		if(scan == RadarState.FullScan) {
 			if(!scanStarted) {
@@ -564,7 +617,15 @@ public class TestBot extends TeamRobot {
 			
 			setTurnRadarRight(radarTurn);			
 		}
-		
+
+		for (int i = 0; i < enemies.length; i++) {
+			if (target.getInfo().getDistance() > enemies[i].getInfo()
+					.getDistance()) {
+				target = enemies[i];
+			}
+		}
+
+
 	}
 
 }
