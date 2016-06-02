@@ -1,4 +1,4 @@
-package robots;
+package helper;
 
 import robocode.*;
 

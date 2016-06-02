@@ -2,9 +2,12 @@ package robots;
 
 import robocode.*;
 import static robocode.util.Utils.*;
+import helper.EnemyBot;
+import helper.WaveBullet;
 
 import java.awt.Color;
-import java.util.Random;
+import java.util.ArrayList;
+import java.util.List;
 
 import robocode.ScannedRobotEvent;
 import robocode.util.Utils;
@@ -21,6 +24,10 @@ enum RadarState {
 	Lock, Sweep, FullScan
 }
 
+enum FireMode {
+	LinearTargeting, GuessFactor
+}
+
 public class TestBot extends TeamRobot {	
 	
 	// Variables	
@@ -30,6 +37,7 @@ public class TestBot extends TeamRobot {
 	private int count = 0; // Count for movement patterns
 	private double EnergyThreshold = 15;	
 	private boolean scanStarted = false;	
+	List<WaveBullet> waves = new ArrayList<WaveBullet>();
 	
 	// States
 	private State state = State.Evading;
@@ -48,6 +56,10 @@ public class TestBot extends TeamRobot {
 	// Statistics
 	private int shotsHit = 0;
 	private int shotsMissed = 0;
+	static int[] stats = new int[31]; // 31 is the number of unique GuessFactors we're using
+  									  // Note: this must be odd number so we can get
+									  // GuessFactor 0 at middle.
+	int direction = 1;
 
 	private boolean bulletHit;
 
@@ -94,6 +106,55 @@ public class TestBot extends TeamRobot {
 								
 			}
 		}
+		
+		// Collect data
+		// Enemy absolute bearing, you can use your one if you already declare it.
+		double absBearing = getHeadingRadians() + e.getBearingRadians();
+
+		// find our enemy's location:
+		double ex = getX() + Math.sin(absBearing) * e.getDistance();
+		double ey = getY() + Math.cos(absBearing) * e.getDistance();
+
+		// Let's process the waves now:
+		for (int i = 0; i < waves.size(); i++) {
+			WaveBullet currentWave = (WaveBullet) waves.get(i);
+			if (currentWave.checkHit(ex, ey, getTime())) {
+				waves.remove(currentWave);
+				i--;
+			}
+		}
+
+		double power = Math.min(3, Math.max(.1, 400 / e.getDistance()));
+
+		// don't try to figure out the direction they're moving
+		// they're not moving, just use the direction we had before
+		if (e.getVelocity() != 0) {
+			if (Math.sin(e.getHeadingRadians() - absBearing) * e.getVelocity() < 0)
+				direction = -1;
+			else
+				direction = 1;
+		}
+		int[] currentStats = stats; // This seems silly, but I'm using it to
+		// show something else later
+		WaveBullet newWave = new WaveBullet(getX(), getY(), absBearing, power, direction, getTime(), currentStats);
+
+		int bestindex = 15; // initialize it to be in the middle, guessfactor 0.
+		for (int i = 0; i < 31; i++)
+			if (currentStats[bestindex] < currentStats[i])
+				bestindex = i;
+
+		// this should do the opposite of the math in the WaveBullet:
+		double guessfactor = (double) (bestindex - (stats.length - 1) / 2) / ((stats.length - 1) / 2);
+		double angleOffset = direction * guessfactor * newWave.maxEscapeAngle();
+		double gunAdjust = Utils.normalRelativeAngle(absBearing - getGunHeadingRadians() + angleOffset);
+		setTurnGunRightRadians(gunAdjust);
+
+		if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, e.getDistance())) {
+			setFire(power);
+			waves.add(newWave);
+			System.out.println("Guess Shooting");
+		}
+		                
 		
 //		System.out.println("---Begin---");		
 //		for(int i = 0;i < enemies.length; i++) {
@@ -198,7 +259,7 @@ public class TestBot extends TeamRobot {
 			
 			
 			if(isEnemyLocked) {
-				fireGun(target);
+				fireGun(target, FireMode.LinearTargeting);
 			} else {
 				System.out.println("Enemy no longer locked.");
 				runScan(RadarState.Sweep);
@@ -384,32 +445,41 @@ public class TestBot extends TeamRobot {
 	 * @param target
 	 *            the robot we want to shoot
 	 */
-	private void fireGun(EnemyBot target) {
+	private void fireGun(EnemyBot target, FireMode fireMode) {
 		ScannedRobotEvent enemy = target.getInfo();
-		double absBearing = enemy.getBearing() + getHeading();
-		double gunTurnAmt;
-
-		// TODO: Skip linear targeting if enemy is too close
-		// Calculate enemie's lateral velocity
-		double latVel = enemy.getVelocity()
-				* Math.sin(enemy.getHeadingRadians()
-						- Math.toRadians(absBearing));
-
-		double bulletSpeed = 20 - 3 * (400 / target.getInfo().getDistance());
-
-		gunTurnAmt = normalRelativeAngleDegrees(absBearing - getGunHeading()
-				+ ((latVel / bulletSpeed) * 57.3));
-		setTurnGunRight(gunTurnAmt); // Turn gun
-
-		if (target.getInfo().getDistance() < 600
-				&& getEnergy() > EnergyThreshold) {
-			if (Math.abs(getGunTurnRemaining()) <= 5) { // Don't shoot before
-														// gun is adjusted
-				setFire(400 / target.getInfo().getDistance());
-				// System.out.println("FIRE");
+		
+		// Linear Targeting
+		// TODO: consider walls
+		if(fireMode == FireMode.LinearTargeting) {			
+			double absBearing = enemy.getBearing() + getHeading();
+			double gunTurnAmt;
+			
+			// TODO: Skip linear targeting if enemy is too close
+			// Calculate enemie's lateral velocity
+			double latVel = enemy.getVelocity()
+					* Math.sin(enemy.getHeadingRadians()
+							- Math.toRadians(absBearing));
+			
+			double bulletSpeed = 20 - 3 * (400 / target.getInfo().getDistance());
+			
+			gunTurnAmt = normalRelativeAngleDegrees(absBearing - getGunHeading()
+					+ ((latVel / bulletSpeed) * 57.3));
+			setTurnGunRight(gunTurnAmt); // Turn gun
+			
+			if (target.getInfo().getDistance() < 600
+					&& getEnergy() > EnergyThreshold) {
+				if (Math.abs(getGunTurnRemaining()) <= 5) { // Don't shoot before
+					// gun is adjusted
+					setFire(400 / target.getInfo().getDistance());
+					// System.out.println("FIRE");
+				}
 			}
 		}
-		return;
+		
+		if(fireMode == FireMode.GuessFactor) {
+			
+		}
+		
 	}
 
 	/**
