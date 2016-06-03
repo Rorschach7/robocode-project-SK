@@ -56,7 +56,7 @@ public class TestBot extends TeamRobot {
 	// Statistics
 	private int shotsHit = 0;
 	private int shotsMissed = 0;
-	static int[] stats = new int[31]; // 31 is the number of unique GuessFactors we're using
+	int[][] stats = new int[13][31]; // onScannedRobot can scan up to 1200px, so there are only 13. // 31 is the number of unique GuessFactors we're using
   									  // Note: this must be odd number so we can get
 									  // GuessFactor 0 at middle.
 	int direction = 1;
@@ -134,8 +134,9 @@ public class TestBot extends TeamRobot {
 			else
 				direction = 1;
 		}
-		int[] currentStats = stats; // This seems silly, but I'm using it to
-		// show something else later
+		
+		int[] currentStats = stats[(int)(e.getDistance() / 100)]; // It doesn't look silly now!
+		
 		WaveBullet newWave = new WaveBullet(getX(), getY(), absBearing, power, direction, getTime(), currentStats);
 
 		int bestindex = 15; // initialize it to be in the middle, guessfactor 0.
@@ -147,14 +148,15 @@ public class TestBot extends TeamRobot {
 		double guessfactor = (double) (bestindex - (stats.length - 1) / 2) / ((stats.length - 1) / 2);
 		double angleOffset = direction * guessfactor * newWave.maxEscapeAngle();
 		double gunAdjust = Utils.normalRelativeAngle(absBearing - getGunHeadingRadians() + angleOffset);
-		setTurnGunRightRadians(gunAdjust);
+		//setTurnGunRightRadians(gunAdjust);
 
 		if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, e.getDistance())) {
-			setFire(power);
+			//setFire(power);
 			waves.add(newWave);
 			System.out.println("Guess Shooting");
-		}
-		                
+		}	
+		
+		 // End of guess shoting               
 		
 //		System.out.println("---Begin---");		
 //		for(int i = 0;i < enemies.length; i++) {
@@ -586,7 +588,7 @@ public class TestBot extends TeamRobot {
 	 * maneuver if
 	 * 
 	 * @param deltaEnergy
-	 *            the energy the enemy tank lost between last and current turn
+	 *            the energy the targeted tank lost between last and current turn
 	 */
 	private void avoidBullet(double deltaEnergy) {
 
