@@ -90,14 +90,21 @@ public class Data {
 			return;
 		}		
 		
+		for(int i = 0; i < 13; i++) {
+			for(int j = 0; j < 31; j++) {
+				System.out.print(stats[i][j] + " ");
+			}
+			System.out.println();
+		}
+		
 	}
 	
-//	public void saveData() {
-//		//System.out.println("Saving Data " + dataList.size());
-//		
-//		Gson gson = new Gson();
-//					
-//	}
+	public String toString() {
+		return robotName + ".json";
+	}
 	
+	public int[][] getStats() {
+		return stats;
+	}
 	
 }

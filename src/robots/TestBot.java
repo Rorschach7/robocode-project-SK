@@ -7,7 +7,8 @@ import helper.Enums.*;
 
 import java.awt.Color;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -16,15 +17,16 @@ import java.util.List;
 import robocode.ScannedRobotEvent;
 import robocode.util.Utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
 
 
 
 public class TestBot extends TeamRobot {	
 	
-	public static boolean PeriodicScan = false;
+	public static boolean periodicScan = false;
+	private static String dataDirectory = "statistics";
 	
 	// Variables	
 	private boolean gameOver = false;
@@ -51,10 +53,7 @@ public class TestBot extends TeamRobot {
 
 	// Statistics
 	List<Data> dataList = new ArrayList<>();
-	// TODO:
-	int[][] stats = new int[13][31]; // onScannedRobot can scan up to 1200px, so there are only 13. // 31 is the number of unique GuessFactors we're using
-  									  // Note: this must be odd number so we can get
-									  // GuessFactor 0 at middle.
+	
 	int direction = 1;
 
 	private boolean bulletHit;
@@ -153,11 +152,11 @@ public class TestBot extends TeamRobot {
 	}
 
 	public void onBulletMissed(BulletMissedEvent event) {
-		FindDataByName(target.getName()).BulletHit(false, fireMode);
+		findDataByName(target.getName()).BulletHit(false, fireMode);
 	}
 
 	public void onBulletHit(BulletHitEvent event) {
-		FindDataByName(target.getName()).BulletHit(true, fireMode);
+		findDataByName(target.getName()).BulletHit(true, fireMode);
 		bulletHit = true;
 	}
 
@@ -168,6 +167,8 @@ public class TestBot extends TeamRobot {
 		}
 		gameOver = true;
 		saveData();
+		
+		dataList.get(0).printData(true);
    }	
 
 	public void onStatus(StatusEvent event) {
@@ -182,7 +183,7 @@ public class TestBot extends TeamRobot {
 
 		// Periodic scan
 		if (scanElapsedTime >= scanTimer) {
-			if (enemies != null && enemies.length > 1 && PeriodicScan) {
+			if (enemies != null && enemies.length > 1 && periodicScan) {
 
 				state = State.Scanning;
 			}
@@ -404,13 +405,13 @@ public class TestBot extends TeamRobot {
 		
 		if(checkForData(robotName)) {
 			// A data file already exists, so load it
-			System.out.println("Load File.");
-			// Add loaded data file to dataList
-			// TODO:
+			System.out.println("Load File.");			
 			data = loadData(robotName);
 			if(data == null) {
 				System.out.println("Loading failed horribly :(");
 			}
+			dataList.add(data);
+			System.out.println("Added " + data + " to DataList.");
 		} else {			
 			System.out.println("No File found.");
 			data = new Data(robotName);					
@@ -445,6 +446,7 @@ public class TestBot extends TeamRobot {
 			
 			gunTurnAmt = normalRelativeAngleDegrees(absBearing - getGunHeading()
 					+ ((latVel / bulletSpeed) * 57.3));
+			
 			setTurnGunRight(gunTurnAmt); // Turn gun
 			
 			if (target.getInfo().getDistance() < 600
@@ -469,26 +471,29 @@ public class TestBot extends TeamRobot {
 				else
 					direction = 1;
 			}
+			Data data = findDataByName(target.getName());			
+			int[] currentStats = data.getStats()[(int)(target.getInfo().getDistance() / 100)];
 			
-			int[] currentStats = stats[(int)(target.getInfo().getDistance() / 100)]; // It doesn't look silly now!
+			WaveBullet newWave = new WaveBullet(getX(), getY(), absBearing, power, direction, getTime(), currentStats);				
 			
-			WaveBullet newWave = new WaveBullet(getX(), getY(), absBearing, power, direction, getTime(), currentStats);
-
 			int bestindex = 15; // initialize it to be in the middle, guessfactor 0.
 			for (int i = 0; i < 31; i++)
 				if (currentStats[bestindex] < currentStats[i])
 					bestindex = i;
 
 			// this should do the opposite of the math in the WaveBullet:
-			double guessfactor = (double) (bestindex - (stats.length - 1) / 2) / ((stats.length - 1) / 2);
+			double guessfactor = (double) (bestindex - (data.getStats().length - 1) / 2) / ((data.getStats().length - 1) / 2);
 			double angleOffset = direction * guessfactor * newWave.maxEscapeAngle();
 			double gunAdjust = Utils.normalRelativeAngle(absBearing - getGunHeadingRadians() + angleOffset);
-			//setTurnGunRightRadians(gunAdjust);
+			System.out.println();
+			setTurnGunRightRadians(gunAdjust);
 
 			if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, target.getInfo().getDistance())) {
 				setFire(power);
 				findBotByName(target.getName()).getWaves().add(newWave);
-				System.out.println("Guess Shooting");
+				System.out.println("Wave " + target.getWaves().size());
+				System.out.println("Guess Shooting " + guessfactor);
+				
 			}	
 			
 			 // End of guess shoting 
@@ -712,15 +717,15 @@ public class TestBot extends TeamRobot {
 	
 	private void collectData(ScannedRobotEvent e) {
 
-		// Collect data		
+		// Collect data
 		double absBearing = getHeadingRadians() + e.getBearingRadians();
 
 		// find our enemy's location:
 		double ex = getX() + Math.sin(absBearing) * e.getDistance();
-		double ey = getY() + Math.cos(absBearing) * e.getDistance();
-
+		double ey = getY() + Math.cos(absBearing) * e.getDistance();	
+		
 		// Let's process the waves now:
-		 EnemyBot enemyBot = findBotByName(e.getName());
+		EnemyBot enemyBot = findBotByName(e.getName());
 		for (int i = 0; i < enemyBot.getWaves().size(); i++) {
 			WaveBullet currentWave = (WaveBullet) enemyBot.getWaves().get(i);
 			if (currentWave.checkHit(ex, ey, getTime())) {
@@ -747,37 +752,47 @@ public class TestBot extends TeamRobot {
 	
 	private void chooseFireMode() {
 		
-		fireMode = FireMode.LinearTargeting;
+		fireMode = FireMode.GuessFactor;
 		
 	}
 	
-	private Data loadData(String robotName) {
-		// TODO:
-		return new Data("WOW");
+	/**
+	 * Tries to load the data file with the specified name, return the object if found or null if not.
+	 * @param robotName Name of the corresponding robot.
+	 * @return The loaded data object or null.
+	 */
+	private Data loadData(String robotName) {		
+		
+		System.out.println("Trying to load " + robotName + ".json");
+		
+		File file = new File(dataDirectory + "/" + robotName + ".json");
+		if(file.exists()) {
+			
+			Gson gson = new Gson();			
+			
+			try {
+				return gson.fromJson(new FileReader(file), Data.class);
+			} catch (JsonSyntaxException | JsonIOException | FileNotFoundException e) {				
+				e.printStackTrace();
+			}
+			
+		}
+		
+		return null;
 	}
 	
 	private void saveData() {
-		System.out.println("Saving Data " + dataList.size());
-		
-		
+		System.out.println("Saving Data " + dataList.size());	
 		
 		Gson gson = new Gson();		
 		
 		for (Data data : dataList) {		
 			
 			try {
-				String dataString = gson.toJson(data);
-				//File file = getDataFile(path);
-				
-//				PrintStream w = null;
-//				try {
-//					w = new PrintStream(new RobocodeFileOutputStream(getDataFile("count.dat")));
-//
-//					w.println(roundCount);
-//					w.println(battleCount);
-				File dir = new File("statistics");
+				String dataString = gson.toJson(data);	
+				File dir = new File(dataDirectory);
 				dir.mkdirs();
-				File file = new File("statistics/" + data.getRobotName() + ".json");				
+				File file = new File(dataDirectory + "/" + data.getRobotName() + ".json");				
 				RobocodeFileWriter writer = new RobocodeFileWriter(file);
 				writer.write(dataString);
 				writer.close();
@@ -789,7 +804,7 @@ public class TestBot extends TeamRobot {
 		}		
 	}
 	
-	private Data FindDataByName(String name) {
+	private Data findDataByName(String name) {
 		
 		String robotName = name;
 		
@@ -817,15 +832,9 @@ public class TestBot extends TeamRobot {
 			int i = name.indexOf(" ");
 			robotName = name.substring(0, i);
 			System.out.println("Multiple Instances: " + robotName);
-		}
-		
-		URL path = this.getClass().getResource("/" + robotName + ".dat");
-		
-		if(path == null) {
-			return false;
-		}
-		
-		File file = new File(path.toString());
+		}			
+				
+		File file = new File(dataDirectory + "/" + robotName + ".json");			
 		
 		return file.exists();
 	}

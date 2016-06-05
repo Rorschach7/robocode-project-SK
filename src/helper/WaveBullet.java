@@ -1,6 +1,7 @@
 package helper;
 
 import java.awt.geom.*;
+
 import robocode.util.Utils;
 
 public class WaveBullet {
@@ -29,14 +30,25 @@ public class WaveBullet {
 	}
 
 	public boolean checkHit(double enemyX, double enemyY, long currentTime) {
+		
 		// if the distance from the wave origin to our enemy has passed
 		// the distance the bullet would have traveled...
 		if (Point2D.distance(startX, startY, enemyX, enemyY) <= (currentTime - fireTime) * getBulletSpeed()) {
 			double desiredDirection = Math.atan2(enemyX - startX, enemyY - startY);
-			double angleOffset = Utils.normalRelativeAngle(desiredDirection - startBearing);
+			
+			System.out.println("Desired DIrection " + Math.toDegrees(desiredDirection));
+			
+			double angleOffset = Utils.normalRelativeAngle(desiredDirection - startBearing);			
+			
+			System.out.println("Angle " + Math.toDegrees(angleOffset));
+			
 			double guessFactor = Math.max(-1, Math.min(1, angleOffset / maxEscapeAngle())) * direction;
 			int index = (int) Math.round((returnSegment.length - 1) / 2 * (guessFactor + 1));
 			returnSegment[index]++;
+			for(int i = 0; i < 31; i++) {
+				System.out.print(returnSegment[i] + " " );				
+			}
+			System.out.println("Wave: Hit " + guessFactor);
 			return true;
 		}
 		return false;
