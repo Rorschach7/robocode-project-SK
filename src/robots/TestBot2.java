@@ -3,7 +3,7 @@ package robots;
 import static robocode.util.Utils.normalRelativeAngleDegrees;
 
 import java.awt.Color;
-
+import helper.Enums.*;
 import robocode.AdvancedRobot;
 import robocode.HitWallEvent;
 import robocode.RobotDeathEvent;
@@ -11,11 +11,9 @@ import robocode.Rules;
 import robocode.ScannedRobotEvent;
 import robocode.StatusEvent;
 
-enum AvoidWall {
-	West, North, East, South, None;
-}
 
-public class TestBot2 extends AdvancedRobot {
+
+public class TestBot2 extends AdvancedRobot {	
 	private double lastRobotDistance;
 	private String lastRobotName;
 	private boolean lastRobotDied = false;

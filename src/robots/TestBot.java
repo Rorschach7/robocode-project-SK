@@ -2,33 +2,29 @@ package robots;
 
 import robocode.*;
 import static robocode.util.Utils.*;
-import helper.EnemyBot;
-import helper.WaveBullet;
+import helper.*;
+import helper.Enums.*;
 
 import java.awt.Color;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
 import robocode.ScannedRobotEvent;
 import robocode.util.Utils;
 
-enum State {
-	Scanning, Attacking, Evading, Finishing
-}
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.JsonIOException;
 
-enum MovementPattern {
-	Circle, Eight, Scanning, Approach, Stop, UpAndDown
-}
 
-enum RadarState {
-	Lock, Sweep, FullScan
-}
-
-enum FireMode {
-	LinearTargeting, GuessFactor
-}
 
 public class TestBot extends TeamRobot {	
+	
+	public static boolean PeriodicScan = false;
 	
 	// Variables	
 	private boolean gameOver = false;
@@ -36,13 +32,13 @@ public class TestBot extends TeamRobot {
 	private int turnDirection = 1;
 	private int count = 0; // Count for movement patterns
 	private double EnergyThreshold = 15;	
-	private boolean scanStarted = false;	
-	List<WaveBullet> waves = new ArrayList<WaveBullet>();
+	private boolean scanStarted = false;		
 	
 	// States
 	private State state = State.Evading;
 	private MovementPattern movePattern = MovementPattern.Stop;
 	private RadarState radarState;
+	private FireMode fireMode;
 	
 	// Time Handles in rounds	
 	private double scanElapsedTime;	
@@ -54,8 +50,8 @@ public class TestBot extends TeamRobot {
 	private AvoidWall avoidWall;
 
 	// Statistics
-	private int shotsHit = 0;
-	private int shotsMissed = 0;
+	List<Data> dataList = new ArrayList<>();
+	// TODO:
 	int[][] stats = new int[13][31]; // onScannedRobot can scan up to 1200px, so there are only 13. // 31 is the number of unique GuessFactors we're using
   									  // Note: this must be odd number so we can get
 									  // GuessFactor 0 at middle.
@@ -93,7 +89,7 @@ public class TestBot extends TeamRobot {
 		
 		// Sweep scan found target, lock on
 		if(radarState == RadarState.Sweep && target.getName().equals(e.getName())) {
-			System.out.println("Sweep found target, lock on");
+			//System.out.println("Sweep found target, lock on");
 			radarState = RadarState.Lock;
 			isEnemyLocked = true;					
 		}		
@@ -107,56 +103,8 @@ public class TestBot extends TeamRobot {
 			}
 		}
 		
-		// Collect data
-		// Enemy absolute bearing, you can use your one if you already declare it.
-		double absBearing = getHeadingRadians() + e.getBearingRadians();
-
-		// find our enemy's location:
-		double ex = getX() + Math.sin(absBearing) * e.getDistance();
-		double ey = getY() + Math.cos(absBearing) * e.getDistance();
-
-		// Let's process the waves now:
-		for (int i = 0; i < waves.size(); i++) {
-			WaveBullet currentWave = (WaveBullet) waves.get(i);
-			if (currentWave.checkHit(ex, ey, getTime())) {
-				waves.remove(currentWave);
-				i--;
-			}
-		}
-
-		double power = Math.min(3, Math.max(.1, 400 / e.getDistance()));
-
-		// don't try to figure out the direction they're moving
-		// they're not moving, just use the direction we had before
-		if (e.getVelocity() != 0) {
-			if (Math.sin(e.getHeadingRadians() - absBearing) * e.getVelocity() < 0)
-				direction = -1;
-			else
-				direction = 1;
-		}
-		
-		int[] currentStats = stats[(int)(e.getDistance() / 100)]; // It doesn't look silly now!
-		
-		WaveBullet newWave = new WaveBullet(getX(), getY(), absBearing, power, direction, getTime(), currentStats);
-
-		int bestindex = 15; // initialize it to be in the middle, guessfactor 0.
-		for (int i = 0; i < 31; i++)
-			if (currentStats[bestindex] < currentStats[i])
-				bestindex = i;
-
-		// this should do the opposite of the math in the WaveBullet:
-		double guessfactor = (double) (bestindex - (stats.length - 1) / 2) / ((stats.length - 1) / 2);
-		double angleOffset = direction * guessfactor * newWave.maxEscapeAngle();
-		double gunAdjust = Utils.normalRelativeAngle(absBearing - getGunHeadingRadians() + angleOffset);
-		//setTurnGunRightRadians(gunAdjust);
-
-		if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, e.getDistance())) {
-			//setFire(power);
-			waves.add(newWave);
-			System.out.println("Guess Shooting");
-		}	
-		
-		 // End of guess shoting               
+		// Collect data fpr guess targeting
+		collectData(e);         
 		
 //		System.out.println("---Begin---");		
 //		for(int i = 0;i < enemies.length; i++) {
@@ -185,14 +133,14 @@ public class TestBot extends TeamRobot {
 		// Remove robot from enemies array
 		for (int i = 0; i < enemies.length; i++) {
 			if (enemies[i].getName().equals(event.getName())) {
-				enemies[i] = null;
+				enemies[i].died();
 				return;
 			}
 		}	
 		
+		// Our target just died, we need a new one
 		if(target.getName().equals(event.getName())) {
 			findTarget();
-
 		}
 	}
 
@@ -205,18 +153,21 @@ public class TestBot extends TeamRobot {
 	}
 
 	public void onBulletMissed(BulletMissedEvent event) {
-		shotsMissed++;
+		FindDataByName(target.getName()).BulletHit(false, fireMode);
 	}
 
 	public void onBulletHit(BulletHitEvent event) {
-		shotsHit++;
+		FindDataByName(target.getName()).BulletHit(true, fireMode);
 		bulletHit = true;
 	}
 
 	public void onRoundEnded(RoundEndedEvent event) {
 		// TODO: Victory Dance
-
+		for (Data data : dataList) {
+			data.printData(false);
+		}
 		gameOver = true;
+		saveData();
    }	
 
 	public void onStatus(StatusEvent event) {
@@ -231,14 +182,12 @@ public class TestBot extends TeamRobot {
 
 		// Periodic scan
 		if (scanElapsedTime >= scanTimer) {
-			if (enemies != null && enemies.length > 1) {
+			if (enemies != null && enemies.length > 1 && PeriodicScan) {
 
 				state = State.Scanning;
 			}
 			scanElapsedTime = 0;
 		}
-		
-
 
 		// Avoid walls
 		detectCloseWall();
@@ -249,21 +198,23 @@ public class TestBot extends TeamRobot {
 
 			// Find Target
 			findTarget();
-
+			
 			
 			// Radar Scanning
 				// FullScan finished, start sweep scan
 			if(!scanStarted && radarState == RadarState.FullScan) { 
-				System.out.println("Full scan finished.");
+				//System.out.println("Full scan finished.");
 				// Sweep search for our target at last known position
 				runScan(RadarState.Sweep);				
 			}		
 			
 			
 			if(isEnemyLocked) {
-				fireGun(target, FireMode.LinearTargeting);
+				// TODO:
+				chooseFireMode();
+				fireGun();
 			} else {
-				System.out.println("Enemy no longer locked.");
+				//System.out.println("Enemy no longer locked.");
 				runScan(RadarState.Sweep);
 			}
 			
@@ -288,7 +239,7 @@ public class TestBot extends TeamRobot {
 
 		}
 		
-		printStatus();
+		//printStatus();
 		isEnemyLocked = false;		
 	}
 
@@ -370,24 +321,14 @@ public class TestBot extends TeamRobot {
 	 * Prints current status information
 	 */
 	public void printStatus() {
-		System.out
-				.println("---------------------------------------------------------");
+		System.out.println("---------------------------------------------------------");
 		System.out.println("Current MovementPattern: " + movePattern.name());
 		System.out.println("Count: " + count);
 		System.out.println("Target: " + target.getName());
 		System.out.println("Attacker: " + attacker.getName());
 		System.out.println("State: " + state);		
-		System.out.println("RadarState: " + radarState);
-		System.out.println("Shots Fired: " + (shotsHit + shotsMissed));
-		System.out.println("Shots Hits: " + shotsHit);
-		System.out.println("Shots Missed: " + shotsMissed);
-		double acc = 0;
-		if ((shotsHit + shotsMissed) != 0) {
-			acc = shotsHit / (shotsHit + shotsMissed) * 100;
-		}
-		System.out.println("Accuracy: " + acc);
-		System.out
-				.println("---------------------------------------------------------");
+		System.out.println("RadarState: " + radarState);			
+		System.out.println("---------------------------------------------------------");
 	}
 
 	/**
@@ -437,7 +378,45 @@ public class TestBot extends TeamRobot {
 		}
 		newEnemies[n - 1] = new EnemyBot();
 		newEnemies[n - 1].init(robot);
-		enemies = newEnemies;
+		enemies = newEnemies;		
+		
+		// Assign scanned Robot to a Data structure		
+		String robotName = robot.getName();
+		
+		// Clean up name 
+		if(robot.getName().contains(" ")) {
+			int i = robot.getName().indexOf(" ");
+			robotName = robot.getName().substring(0, i);
+			//System.out.println("Multiple Instances: " + robotName);
+		}	
+		
+		// Check if we already added this kind of robot
+		for (Data data : dataList) {
+			if(data.getRobotName().equals(robotName)) {
+				// A data object for this kind of robot already exists, abort
+				System.out.println("A data object for this kind of robot already exists, abort");
+				return;
+			}
+		}
+		
+		// Create data object, that we cann add to our list
+		Data data;
+		
+		if(checkForData(robotName)) {
+			// A data file already exists, so load it
+			System.out.println("Load File.");
+			// Add loaded data file to dataList
+			// TODO:
+			data = loadData(robotName);
+			if(data == null) {
+				System.out.println("Loading failed horribly :(");
+			}
+		} else {			
+			System.out.println("No File found.");
+			data = new Data(robotName);					
+			dataList.add(data);
+		}
+		
 	}
 
 	/**
@@ -447,7 +426,7 @@ public class TestBot extends TeamRobot {
 	 * @param target
 	 *            the robot we want to shoot
 	 */
-	private void fireGun(EnemyBot target, FireMode fireMode) {
+	private void fireGun() {
 		ScannedRobotEvent enemy = target.getInfo();
 		
 		// Linear Targeting
@@ -479,6 +458,40 @@ public class TestBot extends TeamRobot {
 		}
 		
 		if(fireMode == FireMode.GuessFactor) {
+			double absBearing = enemy.getBearing() + getHeading();
+			double power = Math.min(3, Math.max(.1, 400 / target.getInfo().getDistance()));
+
+			// don't try to figure out the direction they're moving
+			// they're not moving, just use the direction we had before
+			if (target.getInfo().getVelocity() != 0) {
+				if (Math.sin(target.getInfo().getHeadingRadians() - absBearing) * target.getInfo().getVelocity() < 0)
+					direction = -1;
+				else
+					direction = 1;
+			}
+			
+			int[] currentStats = stats[(int)(target.getInfo().getDistance() / 100)]; // It doesn't look silly now!
+			
+			WaveBullet newWave = new WaveBullet(getX(), getY(), absBearing, power, direction, getTime(), currentStats);
+
+			int bestindex = 15; // initialize it to be in the middle, guessfactor 0.
+			for (int i = 0; i < 31; i++)
+				if (currentStats[bestindex] < currentStats[i])
+					bestindex = i;
+
+			// this should do the opposite of the math in the WaveBullet:
+			double guessfactor = (double) (bestindex - (stats.length - 1) / 2) / ((stats.length - 1) / 2);
+			double angleOffset = direction * guessfactor * newWave.maxEscapeAngle();
+			double gunAdjust = Utils.normalRelativeAngle(absBearing - getGunHeadingRadians() + angleOffset);
+			//setTurnGunRightRadians(gunAdjust);
+
+			if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, target.getInfo().getDistance())) {
+				setFire(power);
+				findBotByName(target.getName()).getWaves().add(newWave);
+				System.out.println("Guess Shooting");
+			}	
+			
+			 // End of guess shoting 
 			
 		}
 		
@@ -501,36 +514,36 @@ public class TestBot extends TeamRobot {
 		}
 		if (avoidWall == AvoidWall.East) {
 			if (heading > 0 && heading <= 90)
-				turnLeft(turnDegree);
+				setTurnLeft(turnDegree);
 			else if (heading > 90 && heading <= 180)
-				turnRight(turnDegree);
+				setTurnRight(turnDegree);
 			else
 				avoidWall = AvoidWall.None;
 			return true;
 		}
 		if (avoidWall == AvoidWall.West) {
 			if (heading > 270 && heading <= 360)
-				turnRight(turnDegree);
+				setTurnRight(turnDegree);
 			else if (heading > 180 && heading <= 270)
-				turnLeft(turnDegree);
+				setTurnLeft(turnDegree);
 			else
 				avoidWall = AvoidWall.None;
 			return true;
 		}
 		if (avoidWall == AvoidWall.North) {
 			if (heading > 270 && heading <= 360)
-				turnLeft(turnDegree);
+				setTurnLeft(turnDegree);
 			else if (heading > 0 && heading <= 90)
-				turnRight(turnDegree);
+				setTurnRight(turnDegree);
 			else
 				avoidWall = AvoidWall.None;
 			return true;
 		}
 		if (avoidWall == AvoidWall.South) {
 			if (heading > 90 && heading <= 180)
-				turnLeft(turnDegree);
+				setTurnLeft(turnDegree);
 			else if (heading > 180 && heading <= 270)
-				turnRight(turnDegree);
+				setTurnRight(turnDegree);
 			else
 				avoidWall = AvoidWall.None;
 			return true;
@@ -618,11 +631,16 @@ public class TestBot extends TeamRobot {
 			return;
 		}
 
-		target = enemies[0];
+		for(int i = 0; i < enemies.length; i++) {
+			if(!enemies[i].isDead()) {
+				target = enemies[i];
+				break;
+			}
+		}
 		
 		// Find closest enemy
 		for(int i = 0; i < enemies.length; i++ ) {
-			if(enemies[i] == null) {
+			if(enemies[i].isDead()) {
 				continue;
 			}
 			if(target.getInfo().getDistance() > enemies[i].getInfo().getDistance()) {
@@ -689,15 +707,127 @@ public class TestBot extends TeamRobot {
 			
 			setTurnRadarRight(radarTurn);			
 		}
+		
+	}
+	
+	private void collectData(ScannedRobotEvent e) {
 
-		for (int i = 0; i < enemies.length; i++) {
-			if (target.getInfo().getDistance() > enemies[i].getInfo()
-					.getDistance()) {
-				target = enemies[i];
+		// Collect data		
+		double absBearing = getHeadingRadians() + e.getBearingRadians();
+
+		// find our enemy's location:
+		double ex = getX() + Math.sin(absBearing) * e.getDistance();
+		double ey = getY() + Math.cos(absBearing) * e.getDistance();
+
+		// Let's process the waves now:
+		 EnemyBot enemyBot = findBotByName(e.getName());
+		for (int i = 0; i < enemyBot.getWaves().size(); i++) {
+			WaveBullet currentWave = (WaveBullet) enemyBot.getWaves().get(i);
+			if (currentWave.checkHit(ex, ey, getTime())) {
+				enemyBot.getWaves().remove(currentWave);
+				i--;
 			}
 		}
 
-
+	}
+	
+	/**
+	 * Finds the specefied robot among all spotted enemies.
+	 * @param name The name of the robot that you want.
+	 * @return the Robot if already spotted and existing, null Otherwise.
+	 */
+	private EnemyBot findBotByName(String name) {
+		for(int i = 0; i < enemies.length; i++) {
+			if(enemies[i].getName().equals(name)) {
+				return enemies[i];
+			}
+		}
+		return null;
+	}
+	
+	private void chooseFireMode() {
+		
+		fireMode = FireMode.LinearTargeting;
+		
+	}
+	
+	private Data loadData(String robotName) {
+		// TODO:
+		return new Data("WOW");
+	}
+	
+	private void saveData() {
+		System.out.println("Saving Data " + dataList.size());
+		
+		
+		
+		Gson gson = new Gson();		
+		
+		for (Data data : dataList) {		
+			
+			try {
+				String dataString = gson.toJson(data);
+				//File file = getDataFile(path);
+				
+//				PrintStream w = null;
+//				try {
+//					w = new PrintStream(new RobocodeFileOutputStream(getDataFile("count.dat")));
+//
+//					w.println(roundCount);
+//					w.println(battleCount);
+				File dir = new File("statistics");
+				dir.mkdirs();
+				File file = new File("statistics/" + data.getRobotName() + ".json");				
+				RobocodeFileWriter writer = new RobocodeFileWriter(file);
+				writer.write(dataString);
+				writer.close();
+				System.out.println("Data saved to ." + file.getAbsolutePath());
+			} catch (JsonIOException | IOException e) {				
+				e.printStackTrace();
+			}
+			
+		}		
+	}
+	
+	private Data FindDataByName(String name) {
+		
+		String robotName = name;
+		
+		// Check 
+		if(name.contains(" ")) {
+			int j = name.indexOf(" ");
+			robotName = name.substring(0, j);
+			//System.out.println("Multiple Instances: " + robotName);
+		}	
+		
+		for (Data data : dataList) {
+			if(data.getRobotName().equals(robotName)) {
+				return data;
+			}
+		}
+		return null;
+	}
+	
+	private boolean checkForData(String name) {
+		
+		String robotName = name;
+		
+		// Check 
+		if(name.contains(" ")) {
+			int i = name.indexOf(" ");
+			robotName = name.substring(0, i);
+			System.out.println("Multiple Instances: " + robotName);
+		}
+		
+		URL path = this.getClass().getResource("/" + robotName + ".dat");
+		
+		if(path == null) {
+			return false;
+		}
+		
+		File file = new File(path.toString());
+		
+		return file.exists();
 	}
 
 }

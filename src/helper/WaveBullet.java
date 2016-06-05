@@ -42,5 +42,8 @@ public class WaveBullet {
 		return false;
 	}
 	
+	public String toString() {
+		return "waveStuff";		
+	}
 
 }
