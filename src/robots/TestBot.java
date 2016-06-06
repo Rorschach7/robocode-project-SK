@@ -156,20 +156,42 @@ public class TestBot extends TeamRobot {
 		findDataByName(target.getName()).BulletHit(false, fireMode);
 	}
 
-	public void onBulletHit(BulletHitEvent event) {
+	public void onBulletHit(BulletHitEvent event) {		
 		findDataByName(target.getName()).BulletHit(true, fireMode);
 		bulletHit = true;
 	}
+	
+	public void onWin(WinEvent event) {
+		
+		
+	}
+	
+	public void onDeath(DeathEvent event) {
+		for (Data data : dataList) {
+			data.lost();
+		}
+	}
 
 	public void onRoundEnded(RoundEndedEvent event) {
-		// TODO: Victory Dance
-		for (Data data : dataList) {
-			data.printData(false);
+		System.out.println("Round ended");
+		
+		if(getEnergy() > 0) {
+			for (Data data : dataList) {
+				data.win();
+			}		
+			System.out.println("VICTORY");
+			// TODO: Victory Dance
 		}
+		
+		
+		// Debug
+		for (Data data : dataList) {
+			data.printData(true);
+		}
+		
 		gameOver = true;
 		saveData();
 		
-		dataList.get(0).printData(true);
    }	
 
 	public void onStatus(StatusEvent event) {
@@ -463,9 +485,7 @@ public class TestBot extends TeamRobot {
 		if(fireMode == FireMode.GuessFactor) {				
 			double absBearing = enemy.getBearingRadians() + getHeadingRadians();
 			double power = Math.min(3, Math.max(.1, 400 / target.getInfo().getDistance()));
-
-			// don't try to figure out the direction they're moving
-			// they're not moving, just use the direction we had before
+			
 			if (target.getInfo().getVelocity() != 0) {
 				if (Math.sin(target.getInfo().getHeadingRadians() - absBearing) * target.getInfo().getVelocity() < 0)
 					direction = -1;
@@ -484,32 +504,17 @@ public class TestBot extends TeamRobot {
 				}			
 			}
 			
-			System.out.println("CurrentStats: " + bestindex);
-			for(int i = 0; i < 31; i++) {
-				if(i == 15){
-					System.out.print("|" + currentStats[i] + "| ");
-					continue;
-				}
-				System.out.print(currentStats[i] + " " );				
-			}
-			System.out.println();	
-
 			// this should do the opposite of the math in the WaveBullet:
 			double guessfactor = (double) (bestindex - (currentStats.length - 1) / 2) / ((currentStats.length - 1) / 2);
 			double angleOffset = direction * guessfactor * newWave.maxEscapeAngle();
 			double gunAdjust = Utils.normalRelativeAngle(absBearing - getGunHeadingRadians() + angleOffset);
 			
-			System.out.println("Guess Factor: " + guessfactor);
-			
 			setTurnGunRightRadians(gunAdjust);
 
 			if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, target.getInfo().getDistance()) && setFireBullet(power) != null) {				
-				waves.add(newWave);
-				System.out.println("Wave created: " + waves.size());				
-			}	
-			
-			 // End of guess shoting 
-			
+				waves.add(newWave);							
+			}			
+			 // End of guess shoting 			
 		}
 		
 	}
