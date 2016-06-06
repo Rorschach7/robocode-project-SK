@@ -36,19 +36,27 @@ public class WaveBullet {
 		if (Point2D.distance(startX, startY, enemyX, enemyY) <= (currentTime - fireTime) * getBulletSpeed()) {
 			double desiredDirection = Math.atan2(enemyX - startX, enemyY - startY);
 			
-			System.out.println("Desired DIrection " + Math.toDegrees(desiredDirection));
+			//System.out.println("Desired DIrection " + Math.toDegrees(desiredDirection));
 			
 			double angleOffset = Utils.normalRelativeAngle(desiredDirection - startBearing);			
 			
-			System.out.println("Angle " + Math.toDegrees(angleOffset));
+			//System.out.println("Angle " + Math.toDegrees(angleOffset));
 			
 			double guessFactor = Math.max(-1, Math.min(1, angleOffset / maxEscapeAngle())) * direction;
 			int index = (int) Math.round((returnSegment.length - 1) / 2 * (guessFactor + 1));
-			returnSegment[index]++;
+			returnSegment[index]++;			
+			
+			// ----------------------------
 			for(int i = 0; i < 31; i++) {
+				if(i == 15){
+					System.out.print("|" + returnSegment[i] + "| ");
+					continue;
+				}
 				System.out.print(returnSegment[i] + " " );				
 			}
 			System.out.println("Wave: Hit " + guessFactor);
+			// -----------------------------
+			
 			return true;
 		}
 		return false;

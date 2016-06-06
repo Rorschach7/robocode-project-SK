@@ -10,7 +10,7 @@ public class EnemyBot {
 	private String name;
 	private boolean isDead;
 	private ScannedRobotEvent info;
-	private List<WaveBullet> waves = new ArrayList<WaveBullet>();
+	//private List<WaveBullet> waves = new ArrayList<WaveBullet>();
 	
 	public EnemyBot() {
 		name = "None";
@@ -47,7 +47,7 @@ public class EnemyBot {
 		return isDead;
 	}
 	
-	public List<WaveBullet> getWaves() {
-		return waves;
-	}
+//	public List<WaveBullet> getWaves() {
+//		return waves;
+//	}
 }

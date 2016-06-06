@@ -51,6 +51,9 @@ public class GuessTG extends AdvancedRobot {
 		// Turn the radar
 		setTurnRadarRightRadians(radarTurn);
 
+		
+		
+		// GUESS Targeting
 		// Enemy absolute bearing, you can use your one if you already declare
 		// it.
 		double absBearing = getHeadingRadians() + e.getBearingRadians();
@@ -77,26 +80,40 @@ public class GuessTG extends AdvancedRobot {
 			else
 				direction = 1;
 		}
-		int[] currentStats = stats[(int) (e.getDistance() / 100)]; // It doesn't
-																	// look
-																	// silly
-																	// now!
+		int[] currentStats = stats[(int) (e.getDistance() / 100)]; 
+		
 		// show something else later
 		WaveBullet newWave = new WaveBullet(getX(), getY(), absBearing, power, direction, getTime(), currentStats);
 
 		int bestindex = 15; // initialize it to be in the middle, guessfactor 0.
-		for (int i = 0; i < 31; i++)
-			if (currentStats[bestindex] < currentStats[i])
-				bestindex = i;
+		for (int i = 0; i < 31; i++) {
+			if (currentStats[bestindex] < currentStats[i]) {
+				bestindex = i;				
+			}			
+		}
+		
+		System.out.println("CurrentStats: " + bestindex);
+		for(int i = 0; i < 31; i++) {
+			if(i == 15){
+				System.out.print("|" + currentStats[i] + "| ");
+				continue;
+			}
+			System.out.print(currentStats[i] + " " );				
+		}
+		System.out.println();		
 
 		// this should do the opposite of the math in the WaveBullet:
-		double guessfactor = (double) (bestindex - (stats.length - 1) / 2) / ((stats.length - 1) / 2);
+		double guessfactor = (double) (bestindex - ((currentStats.length - 1) / 2)) / ((currentStats.length - 1) / 2);
 		double angleOffset = direction * guessfactor * newWave.maxEscapeAngle();
 		double gunAdjust = Utils.normalRelativeAngle(absBearing - getGunHeadingRadians() + angleOffset);
+		
+		System.out.println("Guess Factor: " + guessfactor);
+		
 		setTurnGunRightRadians(gunAdjust);
 		
-		 if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, e.getDistance())) {
+		 if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, e.getDistance()) && setFireBullet(power) != null) {
 			 waves.add(newWave);
+			 System.out.println("FIRE");
 		 }
              
 

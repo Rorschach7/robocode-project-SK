@@ -53,6 +53,7 @@ public class TestBot extends TeamRobot {
 
 	// Statistics
 	List<Data> dataList = new ArrayList<>();
+	private List<WaveBullet> waves = new ArrayList<WaveBullet>();
 	
 	int direction = 1;
 
@@ -459,8 +460,8 @@ public class TestBot extends TeamRobot {
 			}
 		}
 		
-		if(fireMode == FireMode.GuessFactor) {
-			double absBearing = enemy.getBearing() + getHeading();
+		if(fireMode == FireMode.GuessFactor) {				
+			double absBearing = enemy.getBearingRadians() + getHeadingRadians();
 			double power = Math.min(3, Math.max(.1, 400 / target.getInfo().getDistance()));
 
 			// don't try to figure out the direction they're moving
@@ -477,23 +478,34 @@ public class TestBot extends TeamRobot {
 			WaveBullet newWave = new WaveBullet(getX(), getY(), absBearing, power, direction, getTime(), currentStats);				
 			
 			int bestindex = 15; // initialize it to be in the middle, guessfactor 0.
-			for (int i = 0; i < 31; i++)
-				if (currentStats[bestindex] < currentStats[i])
-					bestindex = i;
+			for (int i = 0; i < 31; i++) {
+				if (currentStats[bestindex] < currentStats[i]) {
+					bestindex = i;				
+				}			
+			}
+			
+			System.out.println("CurrentStats: " + bestindex);
+			for(int i = 0; i < 31; i++) {
+				if(i == 15){
+					System.out.print("|" + currentStats[i] + "| ");
+					continue;
+				}
+				System.out.print(currentStats[i] + " " );				
+			}
+			System.out.println();	
 
 			// this should do the opposite of the math in the WaveBullet:
-			double guessfactor = (double) (bestindex - (data.getStats().length - 1) / 2) / ((data.getStats().length - 1) / 2);
+			double guessfactor = (double) (bestindex - (currentStats.length - 1) / 2) / ((currentStats.length - 1) / 2);
 			double angleOffset = direction * guessfactor * newWave.maxEscapeAngle();
 			double gunAdjust = Utils.normalRelativeAngle(absBearing - getGunHeadingRadians() + angleOffset);
-			System.out.println();
+			
+			System.out.println("Guess Factor: " + guessfactor);
+			
 			setTurnGunRightRadians(gunAdjust);
 
-			if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, target.getInfo().getDistance())) {
-				setFire(power);
-				findBotByName(target.getName()).getWaves().add(newWave);
-				System.out.println("Wave " + target.getWaves().size());
-				System.out.println("Guess Shooting " + guessfactor);
-				
+			if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, target.getInfo().getDistance()) && setFireBullet(power) != null) {				
+				waves.add(newWave);
+				System.out.println("Wave created: " + waves.size());				
 			}	
 			
 			 // End of guess shoting 
@@ -726,10 +738,10 @@ public class TestBot extends TeamRobot {
 		
 		// Let's process the waves now:
 		EnemyBot enemyBot = findBotByName(e.getName());
-		for (int i = 0; i < enemyBot.getWaves().size(); i++) {
-			WaveBullet currentWave = (WaveBullet) enemyBot.getWaves().get(i);
+		for (int i = 0; i < waves.size(); i++) {
+			WaveBullet currentWave = (WaveBullet) waves.get(i);
 			if (currentWave.checkHit(ex, ey, getTime())) {
-				enemyBot.getWaves().remove(currentWave);
+				waves.remove(currentWave);
 				i--;
 			}
 		}
