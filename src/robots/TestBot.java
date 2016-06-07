@@ -13,13 +13,13 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.Random;
 import robocode.ScannedRobotEvent;
 import robocode.util.Utils;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
+
 
 
 
@@ -654,16 +654,96 @@ public class TestBot extends TeamRobot {
 		}
 		
 		// Check if enemy hit a wall
-		// TODO:	
+		// TODO if he hits the wall a 2. time in a short time frame it wont be detected
+		double wallDmg = target.getInfo().getVelocity() * 0.5 - 1;
+		if(deltaEnergy == wallDmg){
+			System.out.println("bot hit wall");
+			System.out.println("------");
+			return;
+		}
 		
-		System.out.println("AVOID: " + deltaEnergy);
+		//check if enemy hits another bot
+		//TODO verify with coordinates
+		//TODO never triggers (maybe collision dmg isn't 0.6?)
+		if(deltaEnergy == 0.6){
+			System.out.println("bot hit bot");
+			System.out.println("------");
+			return;
+		}
+		
+		//TODO doesn't detect bullet shots while crashing
+		double bulletVelocity = 20 - 3 * deltaEnergy; 
+		System.out.println("AVOID: " + deltaEnergy + " BulletVelocity: " + bulletVelocity);
 
-//		moveDirection *= -1;
-//		Random rand = new Random();
-//		int rnd = rand.nextInt(6) + 3;
-//		setMaxVelocity(rnd);
+		//TODO when robot turns the radar turns and he looses the target
+		//if not avoiding the wall, make a random movement
+		if(avoidWall == AvoidWall.None){
+			randomMovement();
+		}
 	}
-	
+	 
+	/**
+	 * turn the robot in a random direction but not straight to or away from the enemy
+	 * ("straight" is defined in an angle which gets bigger as closer we are to the enemy)
+	 *  
+	 */
+	private void randomMovement() {
+		ScannedRobotEvent bot = target.getInfo();
+		double botDistance = bot.getDistance();
+		
+		//TODO change deltaAngle according to the distance to the enemy (between 30-80°)  
+		double deltaAngle = 30;		
+		deltaAngle = deltaAngle + (botDistance/50)*5;
+		if(deltaAngle > 80) deltaAngle = 80;
+		
+		double angleDeg = (this.getHeading() + bot.getBearing()) % 360;
+		if(angleDeg < 0) angleDeg+=360;
+		Random rand = new Random();
+		double randAngle;
+		double deltaMin;
+		double deltaMax;
+		//gives a random angle which is not to the enemy or the opposite direction
+		do{
+			randAngle = rand.nextDouble()*360;
+			deltaMin = angleDeg - deltaAngle;
+			if(deltaMin<0) deltaMin+=180;
+			deltaMax = angleDeg + deltaAngle;
+		}while (randAngle < deltaMin && randAngle > deltaMax 
+				|| randAngle < (deltaMin+180) % 360 && randAngle > (deltaMax+180) % 360);
+		
+		//turns to rand direction to the bearing to robot has to change
+		double randBearing = randAngle - this.getHeading();
+		
+		System.out.println("own heading: " + this.getHeading() + " enemy bearring: " + bot.getBearing());
+		System.out.println("angle to enemy: " + angleDeg + " Choosen angle: " +randAngle);	
+		System.out.println("my bearing: " +randBearing +"enemy dist: " + bot.getDistance());
+		
+		//change the movement direction if the bearing is >90°/<-90° and turn accordingly
+		if(moveDirection > 0){
+			if(randBearing < 90 && randBearing > -90){
+				turnRight(randBearing);
+			}else{
+				moveDirection*=-1;
+				if(randBearing <0) randBearing +=180;
+				else randBearing-=180;
+				turnRight(randBearing);
+				System.out.print("change direction and ");
+			}
+			System.out.println("turn " + randBearing + " md: " + moveDirection);
+		}else{
+			if(randBearing < 90 && randBearing > -90){
+				moveDirection*=-1;
+				turnRight(randBearing);
+				System.out.print("change direction and ");
+			}else{
+				if(randBearing <0) randBearing +=180;
+				else randBearing-=180;
+				turnRight(randBearing);
+			}
+			System.out.println("turn " + randBearing + " md: " + moveDirection);
+		}
+	}
+
 	/**
 	 * Finds a target among all spotted enemies
 	 */
