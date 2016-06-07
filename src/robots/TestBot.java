@@ -1,22 +1,17 @@
 package robots;
 
 import robocode.*;
-import static robocode.util.Utils.*;
 import helper.*;
 import helper.Enums.*;
-
 import java.awt.Color;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-
 import robocode.ScannedRobotEvent;
 import robocode.util.Utils;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
@@ -25,8 +20,7 @@ import com.google.gson.JsonSyntaxException;
 
 public class TestBot extends TeamRobot {	
 	
-	public static boolean periodicScan = false;
-	private static String dataDirectory = "statistics";
+	public static boolean periodicScan = false;	
 	
 	// Variables	
 	private boolean gameOver = false;
@@ -261,7 +255,7 @@ public class TestBot extends TeamRobot {
 			// Or short evasive maneuver
 			runMovementPattern(MovementPattern.Stop);
 
-		}
+		}	
 		
 		//printStatus();
 		isEnemyLocked = false;		
@@ -453,8 +447,7 @@ public class TestBot extends TeamRobot {
 	private void fireGun() {
 		ScannedRobotEvent enemy = target.getInfo();
 		
-		// Linear Targeting
-		// TODO: consider walls
+		// Linear Targeting		
 		if(fireMode == FireMode.LinearTargeting) {			
 			
 			double power = Math.min(3, Math.max(.1, 400 / target.getInfo().getDistance()));
@@ -801,9 +794,9 @@ public class TestBot extends TeamRobot {
 	 */
 	private Data loadData(String robotName) {		
 		
-		System.out.println("Trying to load " + robotName + ".json");
+		System.out.println("Trying to load " + robotName + ".json");		
 		
-		File file = new File(dataDirectory + "/" + robotName + ".json");
+		File file = getDataFile(robotName + ".json");
 		if(file.exists()) {
 			
 			Gson gson = new Gson();			
@@ -812,10 +805,8 @@ public class TestBot extends TeamRobot {
 				return gson.fromJson(new FileReader(file), Data.class);
 			} catch (JsonSyntaxException | JsonIOException | FileNotFoundException e) {				
 				e.printStackTrace();
-			}
-			
-		}
-		
+			}			
+		}		
 		return null;
 	}
 	
@@ -828,13 +819,13 @@ public class TestBot extends TeamRobot {
 			
 			try {
 				String dataString = gson.toJson(data);	
-				File dir = new File(dataDirectory);
-				dir.mkdirs();
-				File file = new File(dataDirectory + "/" + data.getRobotName() + ".json");				
+//				File dir = new File(dataDirectory);
+//				dir.mkdirs();
+				File file = getDataFile(data.getRobotName() + ".json"); //new File(dataDirectory + "/" + data.getRobotName() + ".json");				
 				RobocodeFileWriter writer = new RobocodeFileWriter(file);
 				writer.write(dataString);
 				writer.close();
-				System.out.println("Data saved to ." + file.getAbsolutePath());
+				System.out.println("Data saved to " + file.getAbsolutePath());
 			} catch (JsonIOException | IOException e) {				
 				e.printStackTrace();
 			}
@@ -872,7 +863,7 @@ public class TestBot extends TeamRobot {
 			System.out.println("Multiple Instances: " + robotName);
 		}			
 				
-		File file = new File(dataDirectory + "/" + robotName + ".json");			
+		File file = getDataFile(robotName + ".json");			
 		
 		return file.exists();
 	}
