@@ -112,7 +112,7 @@ public class TestBot2 extends AdvancedRobot {
 	}
 
 	private boolean avoidWall() {
-		double turnDegree = 20;
+		double turnDegree = 10;
 		double heading = this.getHeading();
 
 		if (moveDirection != 1) {
@@ -169,7 +169,7 @@ public class TestBot2 extends AdvancedRobot {
 	private boolean detectCloseWall() {
 		double fieldWith = getBattleFieldWidth();
 		double fieldHeight = getBattleFieldHeight();
-		double avoidDistance = Math.abs(60 + 10 * Rules.MAX_VELOCITY);
+		double avoidDistance = 60 + 10 * Rules.MAX_VELOCITY;
 
 		System.out.println("velocity: " + this.getVelocity());
 		double heading = this.getHeading();

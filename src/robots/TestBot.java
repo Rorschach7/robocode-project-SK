@@ -597,7 +597,7 @@ public class TestBot extends TeamRobot {
 	private boolean detectCloseWall() {
 		double fieldWith = getBattleFieldWidth();
 		double fieldHeight = getBattleFieldHeight();
-		double avoidDistance = 100;
+		double avoidDistance = 30 + 10 * Rules.MAX_VELOCITY;
 
 		double heading = this.getHeading();
 
@@ -672,9 +672,9 @@ public class TestBot extends TeamRobot {
 
 		//TODO when robot turns the radar turns and he looses the target
 		//if not avoiding the wall, make a random movement
-		if(avoidWall == AvoidWall.None){
+		//if(avoidWall == AvoidWall.None){
 			randomMovement();
-		}
+		//}
 	}
 	 
 	/**
