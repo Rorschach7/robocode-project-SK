@@ -41,7 +41,8 @@ public class TestBot extends TeamRobot {
 	// Time Handles in rounds	
 	private double scanElapsedTime;	
 	private double scanTimer = 10; // time elapses between scans	
-
+	private int sweepScanCount = 0;
+	
 	private EnemyBot[] enemies;
 	private EnemyBot attacker = new EnemyBot(); // Robot which last attacked us
 	private EnemyBot target = new EnemyBot();
@@ -67,8 +68,8 @@ public class TestBot extends TeamRobot {
 		setBulletColor(Color.green);		
 		
 		setAdjustGunForRobotTurn(true);
-		//setAdjustRadarForRobotTurn(true);
-		//setAdjustRadarForGunTurn(true);
+		setAdjustRadarForRobotTurn(true);
+		setAdjustRadarForGunTurn(true);
 						
 		state = State.Scanning;	
 		
@@ -92,10 +93,8 @@ public class TestBot extends TeamRobot {
 		
 		if (radarState == RadarState.Lock) {
 			if (target.getName().equals(e.getName())) {				
-				isEnemyLocked = true;
-				
-				runScan(RadarState.Lock);
-								
+				isEnemyLocked = true;				
+				runScan(RadarState.Lock);								
 			}
 		}
 		
@@ -137,6 +136,7 @@ public class TestBot extends TeamRobot {
 		// Our target just died, we need a new one
 		if(target.getName().equals(event.getName())) {
 			findTarget();
+			runScan(RadarState.FullScan);
 		}
 	}
 
@@ -217,36 +217,40 @@ public class TestBot extends TeamRobot {
 		if (state == State.Attacking) {
 
 			// Find Target
-			findTarget();
-			
+			findTarget();			
 			
 			// Radar Scanning
 				// FullScan finished, start sweep scan
 			if(!scanStarted && radarState == RadarState.FullScan) { 
-				//System.out.println("Full scan finished.");
+				System.out.println("Full scan finished.");
 				// Sweep search for our target at last known position
 				runScan(RadarState.Sweep);				
 			}		
 			
 			
 			if(isEnemyLocked) {
-				// TODO:
+				System.out.println("Locked on " + target.getName());
 				chooseFireMode();
 				fireGun();
 			} else {
-				//System.out.println("Enemy no longer locked.");
-				runScan(RadarState.Sweep);
+				System.out.println("Enemy no longer locked."); 
+				// Use sweep to find target again
+				// do a full scan if target cannot be found after five rounds
+				if(sweepScanCount < 10 && (radarState == RadarState.Lock || radarState == RadarState.Sweep)) {
+					runScan(RadarState.Sweep);
+				} else {					
+					runScan(RadarState.FullScan);
+					sweepScanCount = 0;
+				}
 			}
 			
-			
-			// Run Attacking movement pattern/strategy
 			// TODO:
-			//runMovementPattern(MovementPattern.UpAndDown); // Needs to be adjusted, should try to get closer to enemy etc
+			runMovementPattern(MovementPattern.UpAndDown); // Needs to be adjusted, should try to get closer to enemy etc
 		}
 		
 		if(state == State.Scanning) {
 			
-			//runMovementPattern(MovementPattern.UpAndDown);
+			runMovementPattern(MovementPattern.Stop);
 			
 			runScan(RadarState.FullScan);			
 		}
@@ -314,12 +318,7 @@ public class TestBot extends TeamRobot {
 				count = 0;
 			}
 			return;
-		}
-
-		// Pattern Approaching
-		if (pattern == MovementPattern.Approach) {
-
-		}
+		}		
 
 		// Pattern Stop
 		if (pattern == MovementPattern.Stop) {
@@ -333,6 +332,10 @@ public class TestBot extends TeamRobot {
 
 			setAhead(moveDirection * 10);
 
+		}
+		
+		if(pattern == MovementPattern.Random) {
+			randomMovement();
 		}
 
 	}
@@ -490,7 +493,10 @@ public class TestBot extends TeamRobot {
 		        setTurnGunRightRadians(robocode.util.Utils.normalRelativeAngle(
 		            Math.atan2(endX - rX, endY - rY)
 		            - getGunHeadingRadians()));
-		        setFire(power);
+		        if(getGunTurnRemaining() < 5) {
+		        	setFire(power);
+		        	System.out.println("FIRE, LinTarget");		        	
+		        }
 		    }			
 		}
 		
@@ -526,7 +532,8 @@ public class TestBot extends TeamRobot {
 			setTurnGunRightRadians(gunAdjust);
 
 			if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, target.getInfo().getDistance()) && setFireBullet(power) != null) {				
-				waves.add(newWave);							
+				waves.add(newWave);
+				System.out.println("Fire,Guess Shooting");
 			}			
 			 // End of guess shoting 			
 		}
@@ -791,7 +798,7 @@ public class TestBot extends TeamRobot {
 		if(scan == RadarState.Sweep) {
 			
 			radarState = RadarState.Sweep;
-			
+			sweepScanCount++;
 			 // Absolute angle towards target
 		    double angleToEnemy = getHeadingRadians() + target.getInfo().getBearingRadians();
 		 
@@ -867,6 +874,22 @@ public class TestBot extends TeamRobot {
 	private void chooseFireMode() {
 		
 		// TODO: 
+		String robotName = target.getName();
+		
+		// Clean up name
+		if(target.getName().contains(" ")) {
+			int i = target.getName().indexOf(" ");
+			robotName = target.getName().substring(0, i);			
+		}
+		
+		Data data = findDataByName(robotName);
+		
+		System.out.println("GuessAcc: " + data.getGuessAccuracy() + " LinAcc: " + data.getLinAccuracy());
+		
+		if(data.getGuessAccuracy() > data.getLinAccuracy()) {
+			fireMode = FireMode.GuessFactor;
+			return;
+		}
 		
 		fireMode = FireMode.LinearTargeting;
 		

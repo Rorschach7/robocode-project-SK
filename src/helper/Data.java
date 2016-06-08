@@ -13,8 +13,8 @@ public class Data {
 	private int guessTargetingHits;
 	private int guessTargetingMissed;
 	
-	double linAccuracy;
-	double guessAccuracy;
+	private double linAccuracy;
+	private double guessAccuracy;
 	
 	private int wins;
 	private int losses;
@@ -22,6 +22,9 @@ public class Data {
 	public Data(String name) {
 		
 		String robotName = name;
+		guessAccuracy = 50;
+		linAccuracy = 25;
+		
 		
 		// Check 
 		if(name.contains(" ")) {
@@ -114,6 +117,14 @@ public class Data {
 	
 	public int[][] getStats() {
 		return stats;
+	}
+	
+	public double getGuessAccuracy() {
+		return guessAccuracy;
+	}
+	
+	public double getLinAccuracy() {
+		return linAccuracy;
 	}
 	
 }
