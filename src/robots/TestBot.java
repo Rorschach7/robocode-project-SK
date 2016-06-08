@@ -426,8 +426,11 @@ public class TestBot extends TeamRobot {
 			// A data file already exists, so load it
 			System.out.println("Load File.");			
 			data = loadData(robotName);
+					
 			if(data == null) {
-				System.out.println("Loading failed horribly :(");
+				System.out.println("File was not found, create new data file");
+				dataList.add(new Data(robotName));
+				return;
 			}
 			dataList.add(data);
 			System.out.println("Added " + data + " to DataList.");
@@ -876,19 +879,20 @@ public class TestBot extends TeamRobot {
 	 */
 	private Data loadData(String robotName) {		
 		
-		System.out.println("Trying to load " + robotName + ".json");		
-		
+		System.out.println("Trying to load " + robotName + ".json");
+
 		File file = getDataFile(robotName + ".json");
-		if(file.exists()) {
-			
-			Gson gson = new Gson();			
-			
-			try {
-				return gson.fromJson(new FileReader(file), Data.class);
-			} catch (JsonSyntaxException | JsonIOException | FileNotFoundException e) {				
-				e.printStackTrace();
-			}			
-		}		
+
+		Gson gson = new Gson();
+
+		try {
+			System.out.println("IN JSON");
+			return gson.fromJson(new FileReader(file), Data.class);
+		} catch (JsonSyntaxException | JsonIOException | FileNotFoundException e) {
+			System.out.println("Error while converting from Json");
+			e.printStackTrace();
+		}			
+				
 		return null;
 	}
 	
