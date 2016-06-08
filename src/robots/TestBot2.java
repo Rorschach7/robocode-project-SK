@@ -1,7 +1,6 @@
 package robots;
 
 import static robocode.util.Utils.normalRelativeAngleDegrees;
-
 import java.awt.Color;
 import helper.Enums.*;
 import robocode.AdvancedRobot;
@@ -11,9 +10,7 @@ import robocode.Rules;
 import robocode.ScannedRobotEvent;
 import robocode.StatusEvent;
 
-
-
-public class TestBot2 extends AdvancedRobot {	
+public class TestBot2 extends AdvancedRobot {
 	private double lastRobotDistance;
 	private String lastRobotName;
 	private boolean lastRobotDied = false;
@@ -25,7 +22,6 @@ public class TestBot2 extends AdvancedRobot {
 		setGunColor(Color.red);
 		setRadarColor(Color.black);
 		setBulletColor(Color.green);
-
 		setAdjustRadarForRobotTurn(true);
 		setAdjustGunForRobotTurn(true); // Keep turret still while moving
 		turnRadarRight(Double.POSITIVE_INFINITY);
@@ -51,11 +47,13 @@ public class TestBot2 extends AdvancedRobot {
 			absBearing = e.getBearing() + getHeading();
 		}
 	}
-/**
- * 	calc needed fire power from distance and life of the enemy
- * 
- * @param e ScannedRobotEvent
- */
+
+	/**
+	 * calc needed fire power from distance and life of the enemy
+	 * 
+	 * @param e
+	 *            ScannedRobotEvent
+	 */
 	private void fireBullet(ScannedRobotEvent e) {
 		double firePower = 400 / e.getDistance();
 		if (firePower > calcFirePowerLife(e)) {
@@ -90,16 +88,18 @@ public class TestBot2 extends AdvancedRobot {
 		avoidWall();
 		setAhead(moveDirection * 20);
 	}
-/**
- * calc the minimal fire power needed to kill the enemy (max MAX_BULLET_POWER)
- * 
- * @param e ScannedRobotEvent
- * @return fire power
- */
-	
+
+	/**
+	 * calc the minimal fire power needed to kill the enemy (max
+	 * MAX_BULLET_POWER)
+	 * 
+	 * @param e
+	 *            ScannedRobotEvent
+	 * @return fire power
+	 */
+
 	private double calcFirePowerLife(ScannedRobotEvent e) {
 		double firePower = Rules.MIN_BULLET_POWER;
-		@SuppressWarnings("deprecation")
 		double life = e.getEnergy();
 
 		// raise bullet power till max or the damage is higher than life
@@ -112,11 +112,14 @@ public class TestBot2 extends AdvancedRobot {
 	}
 
 	private boolean avoidWall() {
-		double turnDegree = 10;
+		double turnDegree = 20;
 		double heading = this.getHeading();
 
 		if (moveDirection != 1) {
+			setBack(4000);
 			heading = (heading + 180) % 360;
+		} else {
+			setAhead(4000);
 		}
 		if (avoidWall == AvoidWall.East) {
 			if (heading > 0 && heading <= 90)
@@ -166,8 +169,9 @@ public class TestBot2 extends AdvancedRobot {
 	private boolean detectCloseWall() {
 		double fieldWith = getBattleFieldWidth();
 		double fieldHeight = getBattleFieldHeight();
-		double avoidDistance = 100;
+		double avoidDistance = Math.abs(60 + 10 * Rules.MAX_VELOCITY);
 
+		System.out.println("velocity: " + this.getVelocity());
 		double heading = this.getHeading();
 
 		if (moveDirection != 1) {
