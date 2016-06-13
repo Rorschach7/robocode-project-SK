@@ -35,10 +35,11 @@ public class TestBot extends TeamRobot {
 	private RadarState radarState;
 	private FireMode fireMode;
 
-	// Time Handles in rounds
-	private double scanElapsedTime;
-	private double scanTimer = 10; // time elapses between scans
-
+	
+	// Time Handles in rounds	
+	private double scanElapsedTime;	
+	private double scanTimer = 10; // time elapses between scans	
+	private int sweepScanCount = 0;
 	private EnemyBot[] enemies;
 	private EnemyBot attacker = new EnemyBot(); // Robot which last attacked us
 	private EnemyBot target = new EnemyBot();
@@ -254,11 +255,10 @@ public class TestBot extends TeamRobot {
 		}
 
 		if (radarState == RadarState.Lock) {
-			if (target.getName().equals(e.getName())) {
-				isEnemyLocked = true;
 
-				runScan(RadarState.Lock);
-
+			if (target.getName().equals(e.getName())) {				
+				isEnemyLocked = true;				
+				runScan(RadarState.Lock);		
 			}
 		}
 
@@ -299,6 +299,7 @@ public class TestBot extends TeamRobot {
 		// Our target just died, we need a new one
 		if (target.getName().equals(event.getName())) {
 			findTarget();
+			runScan(RadarState.FullScan);
 		}
 	}
 
@@ -377,36 +378,42 @@ public class TestBot extends TeamRobot {
 		if (state == State.Attacking) {
 
 			// Find Target
-			findTarget();
-
+			findTarget();			
+			
 			// Radar Scanning
-			// FullScan finished, start sweep scan
-			if (!scanStarted && radarState == RadarState.FullScan) {
-				// System.out.println("Full scan finished.");
+				// FullScan finished, start sweep scan
+			if(!scanStarted && radarState == RadarState.FullScan) { 
+				System.out.println("Full scan finished.");
 				// Sweep search for our target at last known position
-				runScan(RadarState.Sweep);
-			}
-
-			if (isEnemyLocked) {
-				// TODO:
+				runScan(RadarState.Sweep);				
+			}		
+			
+			
+			if(isEnemyLocked) {
+				System.out.println("Locked on " + target.getName());
 				chooseFireMode();
 				fireGun();
 			} else {
-				// System.out.println("Enemy no longer locked.");
-				runScan(RadarState.Sweep);
+				System.out.println("Enemy no longer locked."); 
+				// Use sweep to find target again
+				// do a full scan if target cannot be found after five rounds
+				if(sweepScanCount < 10 && (radarState == RadarState.Lock || radarState == RadarState.Sweep)) {
+					runScan(RadarState.Sweep);
+				} else {					
+					runScan(RadarState.FullScan);
+					sweepScanCount = 0;
+				}
 			}
-
-			// Run Attacking movement pattern/strategy
+			
 			// TODO:
-			// runMovementPattern(MovementPattern.UpAndDown); // Needs to be
-			// adjusted, should try to get closer to enemy etc
+			runMovementPattern(MovementPattern.UpAndDown); // Needs to be adjusted, should try to get closer to enemy etc
 		}
-
-		if (state == State.Scanning) {
-
-			// runMovementPattern(MovementPattern.UpAndDown);
-
-			runScan(RadarState.FullScan);
+		
+		if(state == State.Scanning) {
+			
+			runMovementPattern(MovementPattern.Stop);
+			
+			runScan(RadarState.FullScan);			
 		}
 
 		if (state == State.Evading) {
@@ -472,12 +479,7 @@ public class TestBot extends TeamRobot {
 				count = 0;
 			}
 			return;
-		}
-
-		// Pattern Approaching
-		if (pattern == MovementPattern.Approach) {
-
-		}
+		}		
 
 		// Pattern Stop
 		if (pattern == MovementPattern.Stop) {
@@ -491,6 +493,10 @@ public class TestBot extends TeamRobot {
 
 			setAhead(moveDirection * 10);
 
+		}
+		
+		if(pattern == MovementPattern.Random) {
+			randomMovement();
 		}
 
 	}
@@ -611,58 +617,53 @@ public class TestBot extends TeamRobot {
 	 *            the robot we want to shoot
 	 */
 	private void fireGun() {
-		ScannedRobotEvent enemy = target.getInfo();
-
-		// Linear Targeting
-		if (fireMode == FireMode.LinearTargeting) {
-
-			double power = Math.min(3,
-					Math.max(.1, 400 / target.getInfo().getDistance()));
-			final double ROBOT_WIDTH = 16, ROBOT_HEIGHT = 16;
-			// Variables prefixed with e- refer to enemy, b- refer to bullet and
-			// r- refer to robot
-			final double eAbsBearing = getHeadingRadians()
-					+ target.getInfo().getBearingRadians();
-			final double rX = getX(), rY = getY(), bV = Rules
-					.getBulletSpeed(power);
-			final double eX = rX + target.getInfo().getDistance()
-					* Math.sin(eAbsBearing), eY = rY
-					+ target.getInfo().getDistance() * Math.cos(eAbsBearing), eV = target
-					.getInfo().getVelocity(), eHd = target.getInfo()
-					.getHeadingRadians();
-			// These constants make calculating the quadratic coefficients below
-			// easier
-			final double A = (eX - rX) / bV;
-			final double B = eV / bV * Math.sin(eHd);
-			final double C = (eY - rY) / bV;
-			final double D = eV / bV * Math.cos(eHd);
-			// Quadratic coefficients: a*(1/t)^2 + b*(1/t) + c = 0
-			final double a = A * A + C * C;
-			final double b = 2 * (A * B + C * D);
-			final double c = (B * B + D * D - 1);
-			final double discrim = b * b - 4 * a * c;
-			if (discrim >= 0) {
-				// Reciprocal of quadratic formula
-				final double t1 = 2 * a / (-b - Math.sqrt(discrim));
-				final double t2 = 2 * a / (-b + Math.sqrt(discrim));
-				final double t = Math.min(t1, t2) >= 0 ? Math.min(t1, t2)
-						: Math.max(t1, t2);
-				// Assume enemy stops at walls
-				final double endX = limit(eX + eV * t * Math.sin(eHd),
-						ROBOT_WIDTH / 2, getBattleFieldWidth() - ROBOT_WIDTH
-								/ 2);
-				final double endY = limit(eY + eV * t * Math.cos(eHd),
-						ROBOT_HEIGHT / 2, getBattleFieldHeight() - ROBOT_HEIGHT
-								/ 2);
-				setTurnGunRightRadians(robocode.util.Utils
-						.normalRelativeAngle(Math.atan2(endX - rX, endY - rY)
-								- getGunHeadingRadians()));
-				setFire(power);
-			}
+		ScannedRobotEvent enemy = target.getInfo();		
+		// Linear Targeting		
+		if(fireMode == FireMode.LinearTargeting) {			
+			
+			double power = Math.min(3, Math.max(.1, 400 / target.getInfo().getDistance()));
+		    final double ROBOT_WIDTH = 16,ROBOT_HEIGHT = 16;
+		    // Variables prefixed with e- refer to enemy, b- refer to bullet and r- refer to robot
+		    final double eAbsBearing = getHeadingRadians() + target.getInfo().getBearingRadians();
+		    final double rX = getX(), rY = getY(),
+		        bV = Rules.getBulletSpeed(power);
+		    final double eX = rX + target.getInfo().getDistance()*Math.sin(eAbsBearing),
+		        eY = rY + target.getInfo().getDistance()*Math.cos(eAbsBearing),
+		        eV = target.getInfo().getVelocity(),
+		        eHd = target.getInfo().getHeadingRadians();
+		    // These constants make calculating the quadratic coefficients below easier
+		    final double A = (eX - rX)/bV;
+		    final double B = eV/bV*Math.sin(eHd);
+		    final double C = (eY - rY)/bV;
+		    final double D = eV/bV*Math.cos(eHd);
+		    // Quadratic coefficients: a*(1/t)^2 + b*(1/t) + c = 0
+		    final double a = A*A + C*C;
+		    final double b = 2*(A*B + C*D);
+		    final double c = (B*B + D*D - 1);
+		    final double discrim = b*b - 4*a*c;
+		    if (discrim >= 0) {
+		        // Reciprocal of quadratic formula
+		        final double t1 = 2*a/(-b - Math.sqrt(discrim));
+		        final double t2 = 2*a/(-b + Math.sqrt(discrim));
+		        final double t = Math.min(t1, t2) >= 0 ? Math.min(t1, t2) : Math.max(t1, t2);
+		        // Assume enemy stops at walls
+		        final double endX = limit(
+		            eX + eV*t*Math.sin(eHd),
+		            ROBOT_WIDTH/2, getBattleFieldWidth() - ROBOT_WIDTH/2);
+		        final double endY = limit(
+		            eY + eV*t*Math.cos(eHd),
+		            ROBOT_HEIGHT/2, getBattleFieldHeight() - ROBOT_HEIGHT/2);
+		        setTurnGunRightRadians(robocode.util.Utils.normalRelativeAngle(
+		            Math.atan2(endX - rX, endY - rY)
+		            - getGunHeadingRadians()));
+		        if(getGunTurnRemaining() < 5) {
+		        	setFire(power);
+		        	System.out.println("FIRE, LinTarget");		        	
+		        }
+		    }			
 		}
-
-		if (fireMode == FireMode.GuessFactor) {
-
+		
+		if(fireMode == FireMode.GuessFactor) {
 			// Guess Targeting
 			double absBearing = enemy.getBearingRadians() + getHeadingRadians();
 			double power = Math.min(3,
@@ -700,13 +701,12 @@ public class TestBot extends TeamRobot {
 
 			setTurnGunRightRadians(gunAdjust);
 
-			if (getGunHeat() == 0
-					&& gunAdjust < Math
-							.atan2(9, target.getInfo().getDistance())
-					&& setFireBullet(power) != null) {
+
+			if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, target.getInfo().getDistance()) && setFireBullet(power) != null) {				
 				waves.add(newWave);
-			}
-			// End of guess shoting
+				System.out.println("Fire,Guess Shooting");
+			}			
+			 // End of guess shoting 			
 		}
 
 	}
@@ -988,38 +988,29 @@ public class TestBot extends TeamRobot {
 		if (scan == RadarState.Sweep) {
 
 			radarState = RadarState.Sweep;
-
-			// Absolute angle towards target
-			double angleToEnemy = getHeadingRadians()
-					+ target.getInfo().getBearingRadians();
-
-			// Subtract current radar heading to get the turn required to face
-			// the enemy, be sure it is normalized
-			double radarTurn = Utils.normalRelativeAngle(angleToEnemy
-					- getRadarHeadingRadians());
-
-			// Distance we want to scan from middle of enemy to either side
-			// The 36.0 is how many units from the center of the enemy robot it
-			// scans.
-			double extraTurn = Math.min(
-					Math.atan(36.0 / target.getInfo().getDistance()),
-					Rules.RADAR_TURN_RATE_RADIANS);
-
-			// Adjust the radar turn so it goes that much further in the
-			// direction it is going to turn
-			// Basically if we were going to turn it left, turn it even more
-			// left, if right, turn more right.
-			// This allows us to overshoot our enemy so that we get a good sweep
-			// that will not slip.
-			radarTurn += (radarTurn < 0 ? -extraTurn : extraTurn);
-
-			// Turn the radar
-			setTurnRadarRightRadians(radarTurn);
-
+			sweepScanCount++;
+			 // Absolute angle towards target
+		    double angleToEnemy = getHeadingRadians() + target.getInfo().getBearingRadians();
+		 
+		    // Subtract current radar heading to get the turn required to face the enemy, be sure it is normalized
+		    double radarTurn = Utils.normalRelativeAngle( angleToEnemy - getRadarHeadingRadians() );
+		 
+		    // Distance we want to scan from middle of enemy to either side
+		    // The 36.0 is how many units from the center of the enemy robot it scans.
+		    double extraTurn = Math.min( Math.atan( 36.0 / target.getInfo().getDistance() ), Rules.RADAR_TURN_RATE_RADIANS );
+		 
+		    // Adjust the radar turn so it goes that much further in the direction it is going to turn
+		    // Basically if we were going to turn it left, turn it even more left, if right, turn more right.
+		    // This allows us to overshoot our enemy so that we get a good sweep that will not slip.
+		    radarTurn += (radarTurn < 0 ? -extraTurn : extraTurn);
+		 
+		    //Turn the radar
+		    setTurnRadarRightRadians(radarTurn);
+			
 		}
-
-		if (scan == RadarState.Lock) {
-
+		
+		if(scan == RadarState.Lock) {				
+			
 			radarState = RadarState.Lock;
 
 			if (target.getName().equals("None")) {
@@ -1074,9 +1065,24 @@ public class TestBot extends TeamRobot {
 	}
 
 	private void chooseFireMode() {
-
-		// TODO:
-
+		
+		// TODO: 
+		String robotName = target.getName();
+		
+		// Clean up name
+		if(target.getName().contains(" ")) {
+			int i = target.getName().indexOf(" ");
+			robotName = target.getName().substring(0, i);			
+		}
+		
+		Data data = findDataByName(robotName);
+		
+		System.out.println("GuessAcc: " + data.getGuessAccuracy() + " LinAcc: " + data.getLinAccuracy());
+		
+		if(data.getGuessAccuracy() > data.getLinAccuracy()) {
+			fireMode = FireMode.GuessFactor;
+			return;
+		}
 		fireMode = FireMode.LinearTargeting;
 
 	}
