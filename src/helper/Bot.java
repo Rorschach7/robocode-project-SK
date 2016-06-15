@@ -5,14 +5,14 @@ import java.util.List;
 
 import robocode.*;
 
-public class EnemyBot {
+public class Bot {
 	
 	private String name;
 	private boolean isDead;
 	private ScannedRobotEvent info;
 	//private List<WaveBullet> waves = new ArrayList<WaveBullet>();
 	
-	public EnemyBot() {
+	public Bot() {
 		name = "None";
 	}
 	

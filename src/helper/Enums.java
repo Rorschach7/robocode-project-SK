@@ -20,6 +20,6 @@ public class Enums {
 	
 	public enum AvoidWall {
 		West, North, East, South, None;
-	}
+	}	
 
 }

@@ -40,9 +40,11 @@ public class TestBot extends TeamRobot {
 	private double scanElapsedTime;	
 	private double scanTimer = 10; // time elapses between scans	
 	private int sweepScanCount = 0;
-	private EnemyBot[] enemies;
-	private EnemyBot attacker = new EnemyBot(); // Robot which last attacked us
-	private EnemyBot target = new EnemyBot();
+	//private Bot[] enemies;
+	private ArrayList<Bot> enemies = new ArrayList<>();
+	private  ArrayList<Bot> team = new ArrayList<>();
+	private Bot attacker = new Bot(); // Robot which last attacked us
+	private Bot target = new Bot();
 	private AvoidWall avoidWall;
 
 	// Statistics
@@ -117,7 +119,7 @@ public class TestBot extends TeamRobot {
 		GravPoint p;
 		// cycle through all the enemies. If they are alive, they are repulsive.
 		// Calculate the force on us
-		for (EnemyBot enemyBot : enemies) {
+		for (Bot enemyBot : enemies) {
 			if (!enemyBot.isDead()) {
 
 				double angleToEnemy = enemyBot.getInfo().getBearing();
@@ -228,19 +230,7 @@ public class TestBot extends TeamRobot {
 		double range = Math.sqrt(x * x + y * y);
 		return range;
 	}
-
-	/**Holds the x, y, and strength info of a gravity point**/
-	//TODO gets its own class
-	class GravPoint {
-		public double x, y, power;
-
-		public GravPoint(double pX, double pY, double pPower) {
-			x = pX;
-			y = pY;
-			power = pPower;
-		}
-	}
-
+	
 	public void onScannedRobot(ScannedRobotEvent e) {
 		update(e);
 
@@ -262,16 +252,8 @@ public class TestBot extends TeamRobot {
 			}
 		}
 
-		// Collect data fpr guess targeting
+		// Collect data for guess targeting
 		collectData(e);
-
-		// System.out.println("---Begin---");
-		// for(int i = 0;i < enemies.length; i++) {
-		// if(enemies[i] != null) {
-		// System.out.println(enemies[i].getName());
-		// }
-		// }
-		// System.out.println("---End---");
 
 	}
 
@@ -288,13 +270,13 @@ public class TestBot extends TeamRobot {
 	}
 
 	public void onRobotDeath(RobotDeathEvent event) {
-		// Remove robot from enemies array
-		for (int i = 0; i < enemies.length; i++) {
-			if (enemies[i].getName().equals(event.getName())) {
-				enemies[i].died();
+		// Mark robot as dead
+		for (Bot bot : enemies) {
+			if(bot.getName().equals(event.getName())) {
+				bot.died();
 				return;
 			}
-		}
+		}		
 
 		// Our target just died, we need a new one
 		if (target.getName().equals(event.getName())) {
@@ -318,11 +300,7 @@ public class TestBot extends TeamRobot {
 	public void onBulletHit(BulletHitEvent event) {
 		findDataByName(target.getName()).BulletHit(true, fireMode);
 		bulletHit = true;
-	}
-
-	public void onWin(WinEvent event) {
-
-	}
+	}	
 
 	public void onDeath(DeathEvent event) {
 		for (Data data : dataList) {
@@ -363,7 +341,7 @@ public class TestBot extends TeamRobot {
 
 		// Periodic scan
 		if (scanElapsedTime >= scanTimer) {
-			if (enemies != null && enemies.length > 1 && periodicScan) {
+			if (enemies != null && enemies.size() > 1 && periodicScan) {
 
 				state = State.Scanning;
 			}
@@ -406,7 +384,7 @@ public class TestBot extends TeamRobot {
 			}
 			
 			// TODO:
-			runMovementPattern(MovementPattern.UpAndDown); // Needs to be adjusted, should try to get closer to enemy etc
+			runMovementPattern(MovementPattern.Stop); // Needs to be adjusted, should try to get closer to enemy etc
 		}
 		
 		if(state == State.Scanning) {
@@ -485,7 +463,7 @@ public class TestBot extends TeamRobot {
 		if (pattern == MovementPattern.Stop) {
 
 			// Do nothing
-
+			setMaxVelocity(0);
 		}
 
 		// Pattern Up and Down
@@ -496,7 +474,11 @@ public class TestBot extends TeamRobot {
 		}
 		
 		if(pattern == MovementPattern.Random) {
-			randomMovement();
+			count++;
+			if(count >= 40) {
+				randomMovement();
+				count = 0;
+			}
 		}
 
 	}
@@ -518,7 +500,7 @@ public class TestBot extends TeamRobot {
 	}
 
 	/**
-	 * Updates the enemies array
+	 * Updates the enemies array and the team array
 	 * 
 	 * @param robot
 	 *            the robot that should be updated
@@ -534,79 +516,83 @@ public class TestBot extends TeamRobot {
 				avoidBullet(enemyDeltaEnergy);
 			}
 		}
+		
+		
+		if(isTeammate(robot.getName())) {
+			// Team mate
+			// Update a team mate
+			for (Bot bot : team) {
+				if(bot.getName().equals(robot.getName())) {
+					bot.init(robot);
+					return;
+				}			
+			} 
+			
+			// Add new team mate
+			Bot bot = new Bot();
+			bot.init(robot);
+			team.add(bot);
+			
+		} else {
+			// Enemy
+			// Updtae an enemie
+			if (enemies != null) {
+				
+				for (Bot bot : enemies) {
+					if (bot.getName().equals(robot.getName())) {
+						bot.init(robot);
+						return;
+					}
+				}				
+			}
 
-		// Update robot
-		if (enemies != null) {
-			for (int i = 0; i < enemies.length; i++) {
-				if (enemies[i] == null) {
-					continue;
-				}
-				if (enemies[i].getName().equals(robot.getName())) {
-					enemies[i].init(robot);
+			// Add not existing enemy robot
+			Bot bot = new Bot();
+			bot.init(robot);
+			enemies.add(bot);
+
+			// Assign scanned Robot to a Data structure
+			String robotName = robot.getName();
+
+			// Clean up name
+			if (robot.getName().contains(" ")) {
+				int i = robot.getName().indexOf(" ");
+				robotName = robot.getName().substring(0, i);
+				// System.out.println("Multiple Instances: " + robotName);
+			}
+
+			// Check if we already added this kind of robot
+			for (Data data : dataList) {
+				if (data.getRobotName().equals(robotName)) {
+					// A data object for this kind of robot already exists, abort
+					System.out
+							.println("A data object for this kind of robot already exists, abort");
 					return;
 				}
 			}
-		}
+			
+			// Create data object, that we cann add to our list
+			Data data;
 
-		// Add not existing robot
-		int n = 0;
-		if (enemies == null) {
-			n = 1;
-		} else {
-			n = enemies.length + 1;
-		}
-		EnemyBot[] newEnemies = new EnemyBot[n];
+			if (checkForData(robotName)) {
+				// A data file already exists, so load it
+				System.out.println("Load File.");
+				data = loadData(robotName);
 
-		for (int i = 0; i < n - 1; i++) {
-			if (enemies[i] != null) {
-				newEnemies[i] = enemies[i];
+				if (data == null) {
+					System.out.println("File was not found, create new data file");
+					dataList.add(new Data(robotName));
+					return;
+				}
+				dataList.add(data);
+				System.out.println("Added " + data + " to DataList.");
+			} else {
+				System.out.println("No File found.");
+				data = new Data(robotName);
+				dataList.add(data);
 			}
+			
 		}
-		newEnemies[n - 1] = new EnemyBot();
-		newEnemies[n - 1].init(robot);
-		enemies = newEnemies;
-
-		// Assign scanned Robot to a Data structure
-		String robotName = robot.getName();
-
-		// Clean up name
-		if (robot.getName().contains(" ")) {
-			int i = robot.getName().indexOf(" ");
-			robotName = robot.getName().substring(0, i);
-			// System.out.println("Multiple Instances: " + robotName);
-		}
-
-		// Check if we already added this kind of robot
-		for (Data data : dataList) {
-			if (data.getRobotName().equals(robotName)) {
-				// A data object for this kind of robot already exists, abort
-				System.out
-						.println("A data object for this kind of robot already exists, abort");
-				return;
-			}
-		}
-
-		// Create data object, that we cann add to our list
-		Data data;
-
-		if (checkForData(robotName)) {
-			// A data file already exists, so load it
-			System.out.println("Load File.");
-			data = loadData(robotName);
-
-			if (data == null) {
-				System.out.println("File was not found, create new data file");
-				dataList.add(new Data(robotName));
-				return;
-			}
-			dataList.add(data);
-			System.out.println("Added " + data + " to DataList.");
-		} else {
-			System.out.println("No File found.");
-			data = new Data(robotName);
-			dataList.add(data);
-		}
-
 	}
 
 	/**
@@ -947,21 +933,21 @@ public class TestBot extends TeamRobot {
 			return;
 		}
 
-		for (int i = 0; i < enemies.length; i++) {
-			if (!enemies[i].isDead()) {
-				target = enemies[i];
+		for (int i = 0; i < enemies.size(); i++) {
+			if (!enemies.get(i).isDead()) {
+				target = enemies.get(i);
 				break;
 			}
 		}
 
 		// Find closest enemy
-		for (int i = 0; i < enemies.length; i++) {
-			if (enemies[i].isDead()) {
+		for (int i = 0; i < enemies.size(); i++) {
+			if (enemies.get(i).isDead()) {
 				continue;
 			}
-			if (target.getInfo().getDistance() > enemies[i].getInfo()
+			if (target.getInfo().getDistance() > enemies.get(i).getInfo()
 					.getDistance()) {
-				target = enemies[i];
+				target = enemies.get(i);
 			}
 		}
 
@@ -1055,10 +1041,10 @@ public class TestBot extends TeamRobot {
 	 *            The name of the robot that you want.
 	 * @return the Robot if already spotted and existing, null Otherwise.
 	 */
-	private EnemyBot findBotByName(String name) {
-		for (int i = 0; i < enemies.length; i++) {
-			if (enemies[i].getName().equals(name)) {
-				return enemies[i];
+	private Bot findBotByName(String name) {
+		for (int i = 0; i < enemies.size(); i++) {
+			if (enemies.get(i).getName().equals(name)) {
+				return enemies.get(i);
 			}
 		}
 		return null;
