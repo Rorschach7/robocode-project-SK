@@ -7,11 +7,11 @@ public class Data {
 	private String robotName;
 	private int[][] stats = new int[13][31];
 	
-	private int linearTargetHits;
-	private int linearTargetMissed;
+	private double linearTargetHits;
+	private double linearTargetMissed;
 	
-	private int guessTargetingHits;
-	private int guessTargetingMissed;
+	private double guessTargetingHits;
+	private double guessTargetingMissed;
 	
 	private double linAccuracy;
 	private double guessAccuracy;

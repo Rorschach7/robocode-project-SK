@@ -12,11 +12,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
 import robocode.ScannedRobotEvent;
 import robocode.util.Utils;
-import sun.font.EAttribute;
-
+import javafx.geometry.Point2D;
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
@@ -31,14 +29,17 @@ public class TestBot extends TeamRobot {
 	private int turnDirection = 1;
 	private int count = 0; // Count for movement patterns
 	private double EnergyThreshold = 15;
-	private boolean scanStarted = false;
-
+	private boolean scanStarted = false;	
+	private int direction = 1;
+	private boolean bulletHit;
+	private boolean hitRobot;
+	private boolean isEnemyLocked = false;
+	
 	// States
 	private State state = State.Evading;
 	private MovementPattern movePattern = MovementPattern.Stop;
 	private RadarState radarState;
 	private FireMode fireMode;
-
 	
 	// Time Handles in rounds	
 	private double scanElapsedTime;	
@@ -53,14 +54,7 @@ public class TestBot extends TeamRobot {
 
 	// Statistics
 	List<Data> dataList = new ArrayList<>();
-	private List<WaveBullet> waves = new ArrayList<WaveBullet>();
-
-	int direction = 1;
-
-	private boolean bulletHit;
-
-	private boolean hitRobot;
-	private boolean isEnemyLocked = false;
+	private List<WaveBullet> waves = new ArrayList<WaveBullet>();	
 
 	public void run() {
 
@@ -78,8 +72,9 @@ public class TestBot extends TeamRobot {
 
 		while (true) {
 			scan();
-			if (target.getInfo() != null)
-				antiGravMove();
+			if (target.getInfo() != null) {
+				//antiGravMove();				
+			}
 		}
 	}
 /**
@@ -234,7 +229,7 @@ public class TestBot extends TeamRobot {
 		return range;
 	}
 	
-	public void onScannedRobot(ScannedRobotEvent e) {
+	public void onScannedRobot(ScannedRobotEvent e) {		
 		update(e);
 
 		// System.out.println("Scanned Robot: " + e.getName());
@@ -371,7 +366,7 @@ public class TestBot extends TeamRobot {
 			
 			
 			if(isEnemyLocked) {
-				System.out.println("Locked on " + target.getName());
+				//System.out.println("Locked on " + target.getName());
 				chooseFireMode();
 				fireGun();
 			} else {
@@ -606,7 +601,8 @@ public class TestBot extends TeamRobot {
 	 *            the robot we want to shoot
 	 */
 	private void fireGun() {
-		ScannedRobotEvent enemy = target.getInfo();		
+		ScannedRobotEvent enemy = target.getInfo();	
+		
 		// Linear Targeting		
 		if(fireMode == FireMode.LinearTargeting) {			
 			
@@ -645,9 +641,11 @@ public class TestBot extends TeamRobot {
 		        setTurnGunRightRadians(robocode.util.Utils.normalRelativeAngle(
 		            Math.atan2(endX - rX, endY - rY)
 		            - getGunHeadingRadians()));
-		        if(getGunTurnRemaining() < 5) {
-		        	setFire(power);
-		        	System.out.println("FIRE, LinTarget");		        	
+		        if(getGunTurnRemaining() < 5) {	
+		        	if(!checkFriendlyFire()) {
+		        		setFire(power);
+			        	System.out.println("FIRE, LinTarget");
+		        	}		        			        	
 		        }
 		    }			
 		}
@@ -689,9 +687,8 @@ public class TestBot extends TeamRobot {
 					- getGunHeadingRadians() + angleOffset);
 
 			setTurnGunRightRadians(gunAdjust);
-
-
-			if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, target.getInfo().getDistance()) && setFireBullet(power) != null) {				
+			
+			if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, target.getInfo().getDistance()) && !checkFriendlyFire() && setFireBullet(power) != null) {				
 				waves.add(newWave);
 				System.out.println("Fire,Guess Shooting");
 			}			
@@ -1057,7 +1054,7 @@ public class TestBot extends TeamRobot {
 		
 		Data data = findDataByName(robotName);
 		
-		System.out.println("GuessAcc: " + data.getGuessAccuracy() + " LinAcc: " + data.getLinAccuracy());
+		//System.out.println("GuessAcc: " + data.getGuessAccuracy() + " LinAcc: " + data.getLinAccuracy());
 		
 		if(data.getGuessAccuracy() > data.getLinAccuracy()) {
 			fireMode = FireMode.GuessFactor;
@@ -1156,6 +1153,55 @@ public class TestBot extends TeamRobot {
 		File file = getDataFile(robotName + ".json");
 
 		return file.exists();
+	}
+	
+	private boolean checkFriendlyFire() {
+		double absBearing = getHeadingRadians() + target.getInfo().getBearingRadians();
+		// find our enemy's location:
+		double ex = getX() + Math.sin(absBearing) * target.getInfo().getDistance();
+		double ey = getY() + Math.cos(absBearing) * target.getInfo().getDistance();
+		
+		Point2D enemy = new Point2D(ex, ey);
+		Point2D self = new Point2D(getX(), getY());		
+		
+		Point2D fwd = new Point2D(Math.sin(getGunHeadingRadians()), Math.cos(getGunHeadingRadians()));
+		Point2D right = new Point2D(fwd.getY(), -fwd.getX());
+		
+		// TODO: use these vectors to create a rectangle in front of our tank and then check if another tank overlaps
+		// Rectangle
+		Point2D a = right.multiply(20).add(self);
+		Point2D d = right.multiply(-20).add(self);
+		Point2D b = a.add(fwd.multiply(self.distance(enemy)));
+		Point2D c = d.add(fwd.multiply(self.distance(enemy)));
+		
+		double xLo = a.getX() < b.getX() ? a.getX() : b.getX();
+		double yLo = a.getY() < b.getY() ? a.getY() : b.getY();
+		
+		double xHi = c.getX() < d.getX() ? d.getX() : c.getX();
+		double yHi = c.getY() < d.getY() ? d.getY() : c.getY();
+		
+//		System.out.println("A " + a);
+//		System.out.println("B " + b);
+//		System.out.println("C " + c);
+//		System.out.println("D " + d);
+		
+		//System.out.println("Gun FWD: " + fwd.toString());
+		System.out.println("Tank pos: " + getX() + " " + getY());
+		//System.out.println("Lower right corner " + xLo + " " + yLo);
+		//System.out.println("Upper left corner " + xHi + " " +  yHi);
+		
+		
+		for (Bot bot : team) {
+			double absBe = getHeadingRadians() + bot.getInfo().getBearingRadians();
+			double tx = getX() + Math.sin(absBe) * bot.getInfo().getDistance();
+			double ty = getY() + Math.cos(absBe) * bot.getInfo().getDistance();
+			if(xLo <= tx && tx <= xHi && yLo <= ty && ty <= yHi ) {
+				System.out.println("Friendly Fire! " + bot.getName());
+				System.out.println(tx + " " + ty);
+				return true;
+			}
+		}
+		return false;
 	}
 
 }
