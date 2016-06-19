@@ -3,6 +3,7 @@ package robots;
 import robocode.*;
 import helper.*;
 import helper.Enums.*;
+
 import java.awt.Color;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -11,8 +12,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
 import robocode.ScannedRobotEvent;
 import robocode.util.Utils;
+import sun.font.EAttribute;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
@@ -134,7 +138,6 @@ public class TestBot extends TeamRobot {
 				double enemyY = (getY() + Math.cos(angle)
 						* enemyBot.getInfo().getDistance());
 
-				// TODO maybe add bullet to gravpoint
 				p = new GravPoint(enemyX, enemyY, -1000);
 
 				force = p.power
@@ -349,7 +352,7 @@ public class TestBot extends TeamRobot {
 		}
 
 		// Avoid walls
-		detectCloseWall();
+		avoidWall = detectCloseWall(Math.toRadians(this.getHeading()));
 		avoidWall();
 
 		// Execute behavior for corresponding state
@@ -708,8 +711,6 @@ public class TestBot extends TeamRobot {
 	 * @return true, if wall will be hit. Otherwise false.
 	 */
 	private boolean avoidWall() {
-		// TODO: consider velocity for detection
-		// TODO: block other movement
 		double turnDegree = 10;
 		double heading = this.getHeading();
 
@@ -753,7 +754,8 @@ public class TestBot extends TeamRobot {
 			return true;
 		}
 		return false;
-	}
+	}	
+	
 
 	/**
 	 * To separate avoid and detection (problems with movement otherwise)
@@ -761,12 +763,11 @@ public class TestBot extends TeamRobot {
 	 * @return true if you will hit the wall soon
 	 */
 
-	private boolean detectCloseWall() {
+	private AvoidWall detectCloseWall(double heading) {
 		double fieldWith = getBattleFieldWidth();
 		double fieldHeight = getBattleFieldHeight();
 		double avoidDistance = 60 + 10 * Rules.MAX_VELOCITY;
-
-		double heading = this.getHeading();
+		AvoidWall aW = AvoidWall.None;
 
 		if (moveDirection != 1) {
 			heading = (heading + 180) % 360;
@@ -777,27 +778,23 @@ public class TestBot extends TeamRobot {
 		double yDist = getY() + Math.cos(Math.toRadians(heading))
 				* avoidDistance;
 
-		if (xDist >= fieldWith - 36 || avoidWall == AvoidWall.East) {
+		if (xDist >= fieldWith - 36 || aW == AvoidWall.East) {
 			// going to hit east wall
-			avoidWall = AvoidWall.East;
-			return true;
+			aW = AvoidWall.East;
 		}
-		if (xDist <= 18 || avoidWall == AvoidWall.West) {
+		if (xDist <= 18 || aW == AvoidWall.West) {
 			// going to hit west wall
-			avoidWall = AvoidWall.West;
-			return true;
+			aW = AvoidWall.West;
 		}
-		if (yDist >= fieldHeight - 36 || avoidWall == AvoidWall.North) {
+		if (yDist >= fieldHeight - 36 || aW == AvoidWall.North) {
 			// going to hit north wall
-			avoidWall = AvoidWall.North;
-			return true;
+			aW = AvoidWall.North;
 		}
-		if (yDist <= 18 || avoidWall == AvoidWall.South) {
+		if (yDist <= 18 || aW == AvoidWall.South) {
 			// going to hit south wall
-			avoidWall = AvoidWall.South;
-			return true;
+			aW = AvoidWall.South;
 		}
-		return false;
+		return aW;
 	}
 
 	/**
@@ -840,7 +837,6 @@ public class TestBot extends TeamRobot {
 		System.out.println("AVOID: " + deltaEnergy + " BulletVelocity: "
 				+ bulletVelocity);
 
-		// TODO when robot turns the radar turns and he looses the target
 		// if not avoiding the wall, make a random movement
 		// if(avoidWall == AvoidWall.None){
 		randomMovement();
@@ -850,15 +846,15 @@ public class TestBot extends TeamRobot {
 	/**
 	 * turn the robot in a random direction but not straight to or away from the
 	 * enemy ("straight" is defined in an angle which gets bigger as closer we
-	 * are to the enemy)
+	 * are to the enemy) or to a wall
 	 * 
 	 */
 	private void randomMovement() {
 		ScannedRobotEvent bot = target.getInfo();
 		double botDistance = bot.getDistance();
 
-		// TODO change deltaAngle according to the distance to the enemy
-		// (between 30-80°)
+		//TODO consider close bots
+		// change deltaAngle according to the distance to the enemy
 		double deltaAngle = 30;
 		deltaAngle = deltaAngle + (botDistance / 50) * 5;
 		if (deltaAngle > 80)
@@ -871,27 +867,22 @@ public class TestBot extends TeamRobot {
 		double randAngle;
 		double deltaMin;
 		double deltaMax;
+		
+		deltaMin = angleDeg - deltaAngle;
+		if (deltaMin < 0)
+			deltaMin += 180;
+		deltaMax = angleDeg + deltaAngle;
 		// gives a random angle which is not to the enemy or the opposite
 		// direction
 		do {
 			randAngle = rand.nextDouble() * 360;
-			deltaMin = angleDeg - deltaAngle;
-			if (deltaMin < 0)
-				deltaMin += 180;
-			deltaMax = angleDeg + deltaAngle;
 		} while (randAngle < deltaMin && randAngle > deltaMax
 				|| randAngle < (deltaMin + 180) % 360
-				&& randAngle > (deltaMax + 180) % 360);
+				&& randAngle > (deltaMax + 180) % 360
+				|| detectCloseWall(randAngle) != AvoidWall.None);
 
 		// turns to rand direction to the bearing to robot has to change
 		double randBearing = randAngle - this.getHeading();
-
-		System.out.println("own heading: " + this.getHeading()
-				+ " enemy bearring: " + bot.getBearing());
-		System.out.println("angle to enemy: " + angleDeg + " Choosen angle: "
-				+ randAngle);
-		System.out.println("my bearing: " + randBearing + "enemy dist: "
-				+ bot.getDistance());
 
 		// change the movement direction if the bearing is >90°/<-90° and turn
 		// accordingly
@@ -923,6 +914,9 @@ public class TestBot extends TeamRobot {
 			System.out.println("turn " + randBearing + " md: " + moveDirection);
 		}
 	}
+	
+	
+	
 
 	/**
 	 * Finds a target among all spotted enemies
