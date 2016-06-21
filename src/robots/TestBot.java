@@ -22,10 +22,13 @@ import com.google.gson.JsonSyntaxException;
 public class TestBot extends TeamRobot {	
 	
 	public static boolean periodicScan = false;
-
+	
+	// Constants
+	final int FireCountInterval = 10; // Consider changing fire mode after the were given shots fired
+	
 	// Variables
 	private int nr;
-	private int fireCount = 10; // Consider changing fire mode after the were given shots fired
+	private int fireCount = 0;
 	private boolean gameOver = false;
 	private int moveDirection = 1;// >0 : turn right, <0 : tun left
 	private int turnDirection = 1;
@@ -448,8 +451,8 @@ public class TestBot extends TeamRobot {
 			if(isEnemyLocked) {
 				//System.out.println("Locked on " + target.getName());						
 				fireGun();
-				if(fireCount <= 0) {
-					fireCount = 10;
+				if(fireCount >= FireCountInterval) {
+					fireCount = 0;
 					chooseFireMode();									
 				}
 			} else {
@@ -726,7 +729,7 @@ public class TestBot extends TeamRobot {
 		            - getGunHeadingRadians()));
 		        if(getGunTurnRemaining() < 0.1 && !checkFriendlyFire() && setFireBullet(power) != null) {			        	
 	        		setFire(power);
-	        		fireCount--;
+	        		fireCount++;
 		        	System.out.println("FIRE, LinTarget " + fireCount);		        			        			        	
 		        }
 		    }			
@@ -772,7 +775,7 @@ public class TestBot extends TeamRobot {
 			
 			if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, target.getInfo().getDistance()) && !checkFriendlyFire() && setFireBullet(power) != null) {				
 				waves.add(newWave);
-				fireCount--;
+				fireCount++;
 				System.out.println("Fire, Guess Shooting " + fireCount);
 			}			
 			 // End of guess shoting 			
