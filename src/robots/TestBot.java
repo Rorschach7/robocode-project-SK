@@ -19,11 +19,13 @@ import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
-public class TestBot extends TeamRobot {
-
+public class TestBot extends TeamRobot {	
+	
 	public static boolean periodicScan = false;
 
 	// Variables
+	private int nr;
+	private int fireCount = 10; // Consider changing fire mode after the were given shots fired
 	private boolean gameOver = false;
 	private int moveDirection = 1;// >0 : turn right, <0 : tun left
 	private int turnDirection = 1;
@@ -39,13 +41,12 @@ public class TestBot extends TeamRobot {
 	private State state = State.Evading;
 	private MovementPattern movePattern = MovementPattern.Stop;
 	private RadarState radarState;
-	private FireMode fireMode;
+	private FireMode fireMode = FireMode.GuessFactor;	
 	
 	// Time Handles in rounds	
 	private double scanElapsedTime;	
 	private double scanTimer = 10; // time elapses between scans	
-	private int sweepScanCount = 0;
-	//private Bot[] enemies;
+	private int sweepScanCount = 0;	
 	private ArrayList<Bot> enemies = new ArrayList<>();
 	private  ArrayList<Bot> team = new ArrayList<>();
 	private Bot attacker = new Bot(); // Robot which last attacked us
@@ -54,10 +55,20 @@ public class TestBot extends TeamRobot {
 
 	// Statistics
 	List<Data> dataList = new ArrayList<>();
-	private List<WaveBullet> waves = new ArrayList<WaveBullet>();	
+	private List<WaveBullet> waves = new ArrayList<WaveBullet>();
+	private boolean bestScore = true;
+	private double hits;
+	private double misses;
 
 	public void run() {
-
+		
+		// Assign number
+		if(getTeammates() != null) {
+			int start = getName().indexOf("(");
+			int end = getName().indexOf(")");
+			nr = Integer.parseInt(getName().substring(start + 1, end));						
+		}
+		
 		// Color
 		setBodyColor(Color.gray);
 		setGunColor(Color.blue);
@@ -65,8 +76,8 @@ public class TestBot extends TeamRobot {
 		setBulletColor(Color.green);
 
 		setAdjustGunForRobotTurn(true);
-		// setAdjustRadarForRobotTurn(true);
-		// setAdjustRadarForGunTurn(true);
+		setAdjustRadarForRobotTurn(true);
+		setAdjustRadarForGunTurn(true);
 
 		state = State.Scanning;
 
@@ -217,7 +228,7 @@ public class TestBot extends TeamRobot {
 		} else {
 			dir = 1;
 		}
-		setTurnLeft(ang);
+		//setTurnLeft(ang);
 		return dir;
 	}
 
@@ -268,6 +279,16 @@ public class TestBot extends TeamRobot {
 	}
 
 	public void onRobotDeath(RobotDeathEvent event) {
+		
+		for (Bot bot : team) {
+			if(event.getName().equals(bot.getName())) {
+				bot.died();
+				team.remove(bot);
+				System.out.println("Team mate died");
+				return;
+			}
+		}
+		
 		// Mark robot as dead
 		for (Bot bot : enemies) {
 			if(bot.getName().equals(event.getName())) {
@@ -293,21 +314,33 @@ public class TestBot extends TeamRobot {
 
 	public void onBulletMissed(BulletMissedEvent event) {
 		findDataByName(target.getName()).BulletHit(false, fireMode);
+		misses++;		
 	}
 
+	public void onWin(WinEvent event) {
+		System.out.println("WINEVENT");
+	}
+	
 	public void onBulletHit(BulletHitEvent event) {
 		findDataByName(target.getName()).BulletHit(true, fireMode);
 		bulletHit = true;
+		hits++;
 	}	
 
 	public void onDeath(DeathEvent event) {
 		for (Data data : dataList) {
 			data.lost();
 		}
+		System.out.println("DEFEAT");
+		
+		if(getTeammates() == null) {
+			saveData();
+			return;
+		}		
 	}
 
 	public void onRoundEnded(RoundEndedEvent event) {
-		System.out.println("Round ended");
+		System.out.println("Round ended");		
 
 		if (getEnergy() > 0) {
 			for (Data data : dataList) {
@@ -315,16 +348,63 @@ public class TestBot extends TeamRobot {
 			}
 			System.out.println("VICTORY");
 			// TODO: Victory Dance
-		}
+		} 
 
 		// Debug
-		for (Data data : dataList) {
-			data.printData(true);
-		}
+//		for (Data data : dataList) {
+//			data.printData(true);
+//		}
 
 		gameOver = true;
-		saveData();
-
+		
+		if(getTeammates() == null) {
+			saveData();
+			return;
+		}
+		
+		// Broadcast our score to the team
+		double score = (dataList.get(0).getGuessTargetingHits() + dataList.get(0).getGuessTargetingMissed()) / dataList.get(0).getGuessTargetingHits();
+		try {
+			broadcastMessage("SCORE " + score);
+		} catch (IOException e) {			
+			e.printStackTrace();
+		}
+		
+	}
+	
+	public void onMessageReceived(MessageEvent event) {		
+		
+		String msg = event.getMessage().toString();
+		int ind = msg.indexOf(" ");
+		String start = msg.substring(0, ind);
+		String info = msg.substring(ind + 1);
+		
+		if(start.equals("ALIVE")) {
+			System.out.println(info + " is alive.");
+			for (Bot bot : team) {
+				if(bot.getName().equals(info)) {
+					bot.died();
+				}
+			}
+		}
+		
+		if(start.equals("SCORE")) {
+			double score = (dataList.get(0).getGuessTargetingHits() + dataList.get(0).getGuessTargetingMissed()) / dataList.get(0).getGuessTargetingHits();
+			double msgScore = Double.parseDouble(info);
+			if(msgScore > score) {
+				bestScore = false;
+			}
+			for (Bot bot : team) {
+				if(bot.getName().equals(event.getSender())) {
+					team.remove(bot);
+					break;
+				}
+			}
+			if(team.isEmpty() && bestScore) {			
+				System.out.println("I have the best score " + score + " " + getName());								
+				saveData();
+			}
+		}
 	}
 
 	public void onStatus(StatusEvent event) {
@@ -347,8 +427,8 @@ public class TestBot extends TeamRobot {
 		}
 
 		// Avoid walls
-		avoidWall = detectCloseWall(Math.toRadians(this.getHeading()));
-		avoidWall();
+		//avoidWall = detectCloseWall(Math.toRadians(this.getHeading()));
+		//avoidWall();
 
 		// Execute behavior for corresponding state
 		if (state == State.Attacking) {
@@ -366,9 +446,12 @@ public class TestBot extends TeamRobot {
 			
 			
 			if(isEnemyLocked) {
-				//System.out.println("Locked on " + target.getName());
-				chooseFireMode();
+				//System.out.println("Locked on " + target.getName());						
 				fireGun();
+				if(fireCount <= 0) {
+					fireCount = 10;
+					chooseFireMode();									
+				}
 			} else {
 				System.out.println("Enemy no longer locked."); 
 				// Use sweep to find target again
@@ -641,11 +724,10 @@ public class TestBot extends TeamRobot {
 		        setTurnGunRightRadians(robocode.util.Utils.normalRelativeAngle(
 		            Math.atan2(endX - rX, endY - rY)
 		            - getGunHeadingRadians()));
-		        if(getGunTurnRemaining() < 5) {	
-		        	if(!checkFriendlyFire()) {
-		        		setFire(power);
-			        	System.out.println("FIRE, LinTarget");
-		        	}		        			        	
+		        if(getGunTurnRemaining() < 0.1 && !checkFriendlyFire() && setFireBullet(power) != null) {			        	
+	        		setFire(power);
+	        		fireCount--;
+		        	System.out.println("FIRE, LinTarget " + fireCount);		        			        			        	
 		        }
 		    }			
 		}
@@ -690,7 +772,8 @@ public class TestBot extends TeamRobot {
 			
 			if (getGunHeat() == 0 && gunAdjust < Math.atan2(9, target.getInfo().getDistance()) && !checkFriendlyFire() && setFireBullet(power) != null) {				
 				waves.add(newWave);
-				System.out.println("Fire,Guess Shooting");
+				fireCount--;
+				System.out.println("Fire, Guess Shooting " + fireCount);
 			}			
 			 // End of guess shoting 			
 		}
@@ -831,12 +914,11 @@ public class TestBot extends TeamRobot {
 
 		// TODO doesn't detect bullet shots while crashing
 		double bulletVelocity = 20 - 3 * deltaEnergy;
-		System.out.println("AVOID: " + deltaEnergy + " BulletVelocity: "
-				+ bulletVelocity);
+		//System.out.println("AVOID: " + deltaEnergy + " BulletVelocity: " + bulletVelocity);
 
 		// if not avoiding the wall, make a random movement
 		// if(avoidWall == AvoidWall.None){
-		randomMovement();
+		//randomMovement();
 		// }
 	}
 
@@ -893,14 +975,14 @@ public class TestBot extends TeamRobot {
 				else
 					randBearing -= 180;
 				turnRight(randBearing);
-				System.out.print("change direction and ");
+				//System.out.print("change direction and ");
 			}
-			System.out.println("turn " + randBearing + " md: " + moveDirection);
+			//System.out.println("turn " + randBearing + " md: " + moveDirection);
 		} else {
 			if (randBearing < 90 && randBearing > -90) {
 				moveDirection *= -1;
 				turnRight(randBearing);
-				System.out.print("change direction and ");
+				//System.out.print("change direction and ");
 			} else {
 				if (randBearing < 0)
 					randBearing += 180;
@@ -908,11 +990,9 @@ public class TestBot extends TeamRobot {
 					randBearing -= 180;
 				turnRight(randBearing);
 			}
-			System.out.println("turn " + randBearing + " md: " + moveDirection);
+			//System.out.println("turn " + randBearing + " md: " + moveDirection);
 		}
 	}
-	
-	
 	
 
 	/**
@@ -995,12 +1075,30 @@ public class TestBot extends TeamRobot {
 				return;
 			}
 
-			double angleToEnemy = getHeading() + target.getInfo().getBearing();
-
-			double radarTurn = Utils.normalRelativeAngleDegrees(angleToEnemy
-					- getRadarHeading());
-
-			setTurnRadarRight(radarTurn);
+//			double angleToEnemy = getHeading() + target.getInfo().getBearing();
+//
+//			double radarTurn = Utils.normalRelativeAngleDegrees(angleToEnemy
+//					- getRadarHeading());
+//
+//			setTurnRadarRight(radarTurn);
+			
+		  double angleToEnemy = getHeadingRadians() + target.getInfo().getBearingRadians();
+			 
+		    // Subtract current radar heading to get the turn required to face the enemy, be sure it is normalized
+		    double radarTurn = Utils.normalRelativeAngle( angleToEnemy - getRadarHeadingRadians() );
+		 
+		    // Distance we want to scan from middle of enemy to either side
+		    // The 36.0 is how many units from the center of the enemy robot it scans.
+		    double extraTurn = Math.min( Math.atan( 20.0 / target.getInfo().getDistance() ), Rules.RADAR_TURN_RATE_RADIANS );
+		 
+		    // Adjust the radar turn so it goes that much further in the direction it is going to turn
+		    // Basically if we were going to turn it left, turn it even more left, if right, turn more right.
+		    // This allows us to overshoot our enemy so that we get a good sweep that will not slip.
+		    radarTurn += (radarTurn < 0 ? -extraTurn : extraTurn);
+		 
+		    //Turn the radar
+		    setTurnRadarRightRadians(radarTurn);
+			
 		}
 
 	}
@@ -1042,6 +1140,28 @@ public class TestBot extends TeamRobot {
 	}
 
 	private void chooseFireMode() {
+		
+		System.out.println(hits + " " + misses);
+		
+		double acc =  hits / (hits + misses) * 100.0; 
+		
+		System.out.println("Current Accuracy " + acc);
+		
+		hits = 0;
+		misses = 0;	
+		
+		if(acc > 60) {
+			return;
+		}
+		
+		System.out.println("Change Fire Mode");
+		
+		if(fireMode == FireMode.LinearTargeting) {
+			fireMode = FireMode.GuessFactor;
+		} else {
+			fireMode = FireMode.LinearTargeting;
+			return;
+		}		
 		
 		// TODO: 
 		String robotName = target.getName();
@@ -1092,7 +1212,8 @@ public class TestBot extends TeamRobot {
 	}
 
 	private void saveData() {
-		System.out.println("Saving Data " + dataList.size());
+		
+		System.out.println("Saving Data " + dataList.size());				
 
 		Gson gson = new Gson();
 
@@ -1186,7 +1307,7 @@ public class TestBot extends TeamRobot {
 //		System.out.println("D " + d);
 		
 		//System.out.println("Gun FWD: " + fwd.toString());
-		System.out.println("Tank pos: " + getX() + " " + getY());
+		//System.out.println("Tank pos: " + getX() + " " + getY());
 		//System.out.println("Lower right corner " + xLo + " " + yLo);
 		//System.out.println("Upper left corner " + xHi + " " +  yHi);
 		
@@ -1203,5 +1324,7 @@ public class TestBot extends TeamRobot {
 		}
 		return false;
 	}
+	
+	
 
 }

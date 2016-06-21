@@ -43,11 +43,12 @@ public class Bot {
 		isDead = true;
 	}
 	
+	public void alive() {
+		isDead = false;
+	}
+	
 	public boolean isDead() {
 		return isDead;
 	}
-	
-//	public List<WaveBullet> getWaves() {
-//		return waves;
-//	}
+
 }

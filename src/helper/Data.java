@@ -127,4 +127,12 @@ public class Data {
 		return linAccuracy;
 	}
 	
+	public double getGuessTargetingHits() {
+		return guessTargetingHits;
+	}
+	
+	public double getGuessTargetingMissed() {
+		return guessTargetingMissed;
+	}
+	
 }
