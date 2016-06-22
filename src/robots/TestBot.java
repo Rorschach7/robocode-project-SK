@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import robocode.ScannedRobotEvent;
+
 import robocode.util.Utils;
 import javafx.geometry.Point2D;
 import com.google.gson.Gson;
@@ -88,10 +88,7 @@ public class TestBot extends TeamRobot {
 		state = State.Scanning;
 
 		while (true) {
-			scan();
-			if (target.getInfo() != null) {
-				//antiGravMove();
-			}
+			scan();			
 		}
 	}
 
@@ -223,6 +220,7 @@ public class TestBot extends TeamRobot {
 
 	/** Move in the direction of an x and y coordinate **/
 	private void goTo(double x, double y) {
+		setMaxVelocity(Rules.MAX_VELOCITY);
 		double dist = 20;
 		double angle = Math.toDegrees(absBearing(getX(), getY(), x, y));
 		double r = turnTo(angle);
@@ -434,6 +432,11 @@ public class TestBot extends TeamRobot {
 		if (gameOver) {
 			return;
 		}
+		
+		// TODO: when should this run
+		if (target.getInfo() != null) {
+			antiGravMove();
+		}
 
 		// Increment Time Handler
 		if (!scanStarted) {
@@ -484,7 +487,7 @@ public class TestBot extends TeamRobot {
 			}
 
 			// TODO:
-			runMovementPattern(MovementPattern.Stop); // Needs to be adjusted,
+			runMovementPattern(MovementPattern.AntiGravity); // Needs to be adjusted,
 														// should try to get
 														// closer to enemy etc
 		}
@@ -564,10 +567,14 @@ public class TestBot extends TeamRobot {
 			// Do nothing
 			setMaxVelocity(0);
 		}
+		
+		if(pattern == MovementPattern.AntiGravity) {
+			antiGravMove();
+		}
 
 		// Pattern Up and Down
 		if (pattern == MovementPattern.UpAndDown) {
-
+			setMaxVelocity(Rules.MAX_VELOCITY * 0.75);
 			setAhead(moveDirection * 10);
 
 		}
@@ -945,7 +952,7 @@ public class TestBot extends TeamRobot {
 		bulletVelocity = 20 - 3 * deltaEnergy;
 
 		// TODO
-		state = State.Evading;
+		//state = State.Evading;
 	}
 
 	/**
@@ -1312,7 +1319,9 @@ public class TestBot extends TeamRobot {
 
 		Point2D enemy = new Point2D(ex, ey);
 		Point2D self = new Point2D(getX(), getY());
-
+		
+		System.out.println(">Distance " + enemy.distance(self));
+		
 		Point2D fwd = new Point2D(Math.sin(getGunHeadingRadians()),
 				Math.cos(getGunHeadingRadians()));
 		Point2D right = new Point2D(fwd.getY(), -fwd.getX());

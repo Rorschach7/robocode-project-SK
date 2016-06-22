@@ -7,7 +7,7 @@ public class Enums {
 	}
 
 	public enum MovementPattern {
-		Circle, Eight, Scanning, Stop, UpAndDown, Random
+		Circle, Eight, Scanning, Stop, UpAndDown, Random, AntiGravity
 	}
 
 	public enum RadarState {
