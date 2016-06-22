@@ -135,4 +135,15 @@ public class Data {
 		return guessTargetingMissed;
 	}
 	
+	public boolean isReliable() {
+		double linSum = linearTargetHits + linearTargetMissed;
+		double guessSum = guessTargetingHits + guessTargetingMissed;
+		
+		if(linSum < 100 || guessSum < 100) {
+			return false;
+		} else {
+			return true;
+		}		
+	}
+	
 }

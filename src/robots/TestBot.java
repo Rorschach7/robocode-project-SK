@@ -3,6 +3,8 @@ package robots;
 import robocode.*;
 import helper.*;
 import helper.Enums.*;
+import helper.strategies.DynamicChange;
+import helper.strategies.GunStrategy;
 import java.awt.Color;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -11,7 +13,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
 import robocode.util.Utils;
 import javafx.geometry.Point2D;
 import com.google.gson.Gson;
@@ -20,15 +21,10 @@ import com.google.gson.JsonSyntaxException;
 
 public class TestBot extends TeamRobot {
 
-	public static boolean periodicScan = false;
-
-	// Constants
-	final int FireCountInterval = 10; // Consider changing fire mode after the
-										// were given shots fired
+	public static boolean periodicScan = false;	
 
 	// Variables
-	private int nr;
-	private int fireCount = 0;
+	private int nr;	
 	private boolean gameOver = false;
 	private int moveDirection = 1;// >0 : turn right, <0 : tun left
 	private int turnDirection = 1;
@@ -65,6 +61,9 @@ public class TestBot extends TeamRobot {
 	private boolean bestScore = true;
 	private double hits;
 	private double misses;
+	
+	// Strategies
+	private GunStrategy gunStrategy = new DynamicChange();	
 
 	public void run() {
 
@@ -330,7 +329,10 @@ public class TestBot extends TeamRobot {
 
 	public void onBulletMissed(BulletMissedEvent event) {
 		findDataByName(target.getName()).BulletHit(false, fireMode);
-		misses++;
+		if(gunStrategy instanceof DynamicChange) {
+			DynamicChange dynamic = (DynamicChange) gunStrategy;
+			dynamic.miss();
+		}
 	}
 
 	public void onWin(WinEvent event) {
@@ -340,7 +342,10 @@ public class TestBot extends TeamRobot {
 	public void onBulletHit(BulletHitEvent event) {
 		findDataByName(target.getName()).BulletHit(true, fireMode);
 		bulletHit = true;
-		hits++;
+		if(gunStrategy instanceof DynamicChange) {
+			DynamicChange dynamic = (DynamicChange) gunStrategy;
+			dynamic.hit();
+		}
 	}
 
 	public void onDeath(DeathEvent event) {
@@ -466,13 +471,8 @@ public class TestBot extends TeamRobot {
 				runScan(RadarState.Sweep);
 			}
 
-			if (isEnemyLocked) {
-				// System.out.println("Locked on " + target.getName());
-				fireGun();
-				if (fireCount >= FireCountInterval) {
-					fireCount = 0;
-					chooseFireMode();
-				}
+			if (isEnemyLocked) {				
+				fireGun();		
 			} else {
 				System.out.println("Enemy no longer locked.");
 				// Use sweep to find target again
@@ -724,114 +724,7 @@ public class TestBot extends TeamRobot {
 	 *            the robot we want to shoot
 	 */
 	private void fireGun() {
-		ScannedRobotEvent enemy = target.getInfo();
-
-		// Linear Targeting
-		if (fireMode == FireMode.LinearTargeting) {
-
-			double power = Math.min(3,
-					Math.max(.1, 400 / target.getInfo().getDistance()));
-			final double ROBOT_WIDTH = 16, ROBOT_HEIGHT = 16;
-			// Variables prefixed with e- refer to enemy, b- refer to bullet and
-			// r- refer to robot
-			final double eAbsBearing = getHeadingRadians()
-					+ target.getInfo().getBearingRadians();
-			final double rX = getX(), rY = getY(), bV = Rules
-					.getBulletSpeed(power);
-			final double eX = rX + target.getInfo().getDistance()
-					* Math.sin(eAbsBearing), eY = rY
-					+ target.getInfo().getDistance() * Math.cos(eAbsBearing), eV = target
-					.getInfo().getVelocity(), eHd = target.getInfo()
-					.getHeadingRadians();
-			// These constants make calculating the quadratic coefficients below
-			// easier
-			final double A = (eX - rX) / bV;
-			final double B = eV / bV * Math.sin(eHd);
-			final double C = (eY - rY) / bV;
-			final double D = eV / bV * Math.cos(eHd);
-			// Quadratic coefficients: a*(1/t)^2 + b*(1/t) + c = 0
-			final double a = A * A + C * C;
-			final double b = 2 * (A * B + C * D);
-			final double c = (B * B + D * D - 1);
-			final double discrim = b * b - 4 * a * c;
-			if (discrim >= 0) {
-				// Reciprocal of quadratic formula
-				final double t1 = 2 * a / (-b - Math.sqrt(discrim));
-				final double t2 = 2 * a / (-b + Math.sqrt(discrim));
-				final double t = Math.min(t1, t2) >= 0 ? Math.min(t1, t2)
-						: Math.max(t1, t2);
-				// Assume enemy stops at walls
-				final double endX = limit(eX + eV * t * Math.sin(eHd),
-						ROBOT_WIDTH / 2, getBattleFieldWidth() - ROBOT_WIDTH
-								/ 2);
-				final double endY = limit(eY + eV * t * Math.cos(eHd),
-						ROBOT_HEIGHT / 2, getBattleFieldHeight() - ROBOT_HEIGHT
-								/ 2);
-				setTurnGunRightRadians(robocode.util.Utils
-						.normalRelativeAngle(Math.atan2(endX - rX, endY - rY)
-								- getGunHeadingRadians()));
-				if (getGunTurnRemaining() < 0.1 && !checkFriendlyFire()
-						&& setFireBullet(power) != null) {
-					setFire(power);
-					fireCount++;
-					//System.out.println("FIRE, LinTarget " + fireCount);
-				}
-			}
-		}
-
-		if (fireMode == FireMode.GuessFactor) {
-			// Guess Targeting
-			double absBearing = enemy.getBearingRadians() + getHeadingRadians();
-			double power = Math.min(3,
-					Math.max(.1, 400 / target.getInfo().getDistance()));
-
-			if (target.getInfo().getVelocity() != 0) {
-				if (Math.sin(target.getInfo().getHeadingRadians() - absBearing)
-						* target.getInfo().getVelocity() < 0)
-					direction = -1;
-				else
-					direction = 1;
-			}
-			Data data = findDataByName(target.getName());
-			int[] currentStats = data.getStats()[(int) (target.getInfo()
-					.getDistance() / 100)];
-
-			WaveBullet newWave = new WaveBullet(getX(), getY(), absBearing,
-					power, direction, getTime(), currentStats);
-
-			int bestindex = 15; // initialize it to be in the middle,
-								// guessfactor 0.
-			for (int i = 0; i < 31; i++) {
-				if (currentStats[bestindex] < currentStats[i]) {
-					bestindex = i;
-				}
-			}
-
-			// this should do the opposite of the math in the WaveBullet:
-			double guessfactor = (double) (bestindex - (currentStats.length - 1) / 2)
-					/ ((currentStats.length - 1) / 2);
-			double angleOffset = direction * guessfactor
-					* newWave.maxEscapeAngle();
-			double gunAdjust = Utils.normalRelativeAngle(absBearing
-					- getGunHeadingRadians() + angleOffset);
-
-			setTurnGunRightRadians(gunAdjust);
-
-			if (getGunHeat() == 0
-					&& gunAdjust < Math
-							.atan2(9, target.getInfo().getDistance())
-					&& !checkFriendlyFire() && setFireBullet(power) != null) {
-				waves.add(newWave);
-				fireCount++;
-				//System.out.println("Fire, Guess Shooting " + fireCount);
-			}
-			// End of guess shoting
-		}
-
-	}
-
-	private double limit(double value, double min, double max) {
-		return Math.min(max, Math.max(min, value));
+		gunStrategy.execute(this);
 	}
 
 	/**
@@ -1145,10 +1038,10 @@ public class TestBot extends TeamRobot {
 		double ey = getY() + Math.cos(absBearing) * e.getDistance();
 
 		// Let's process the waves now:
-		for (int i = 0; i < waves.size(); i++) {
-			WaveBullet currentWave = (WaveBullet) waves.get(i);
+		for (int i = 0; i < getWaves().size(); i++) {
+			WaveBullet currentWave = (WaveBullet) getWaves().get(i);
 			if (currentWave.checkHit(ex, ey, getTime())) {
-				waves.remove(currentWave);
+				getWaves().remove(currentWave);
 				i--;
 			}
 		}
@@ -1168,53 +1061,7 @@ public class TestBot extends TeamRobot {
 			}
 		}
 		return null;
-	}
-
-	private void chooseFireMode() {
-
-		System.out.println(hits + " " + misses);
-
-		double acc = hits / (hits + misses) * 100.0;
-
-		System.out.println("Current Accuracy " + acc);
-
-		hits = 0;
-		misses = 0;
-
-		if (acc > 60) {
-			return;
-		}
-
-		System.out.println("Change Fire Mode");
-
-		if (fireMode == FireMode.LinearTargeting) {
-			fireMode = FireMode.GuessFactor;
-		} else {
-			fireMode = FireMode.LinearTargeting;
-			return;
-		}
-
-		// TODO:
-		String robotName = target.getName();
-
-		// Clean up name
-		if (target.getName().contains(" ")) {
-			int i = target.getName().indexOf(" ");
-			robotName = target.getName().substring(0, i);
-		}
-
-		Data data = findDataByName(robotName);
-
-		// System.out.println("GuessAcc: " + data.getGuessAccuracy() +
-		// " LinAcc: " + data.getLinAccuracy());
-
-		if (data.getGuessAccuracy() > data.getLinAccuracy()) {
-			fireMode = FireMode.GuessFactor;
-			return;
-		}
-		fireMode = FireMode.LinearTargeting;
-
-	}
+	}	
 
 	/**
 	 * Tries to load the data file with the specified name, return the object if
@@ -1273,7 +1120,7 @@ public class TestBot extends TeamRobot {
 		}
 	}
 
-	private Data findDataByName(String name) {
+	public Data findDataByName(String name) {
 
 		String robotName = name;
 
@@ -1308,7 +1155,7 @@ public class TestBot extends TeamRobot {
 		return file.exists();
 	}
 
-	private boolean checkFriendlyFire() {
+	public boolean checkFriendlyFire() {
 		double absBearing = getHeadingRadians()
 				+ target.getInfo().getBearingRadians();
 		// find our enemy's location:
@@ -1360,4 +1207,25 @@ public class TestBot extends TeamRobot {
 		}
 		return false;
 	}
+	
+	public Bot getTarget() {
+		return target;
+	}
+	
+	public int getDirection() {
+		return direction;
+	}
+	
+	public void setDirection(int direction) {
+		this.direction = direction;
+	}
+
+	public List<WaveBullet> getWaves() {
+		return waves;
+	}
+
+	public void setWaves(List<WaveBullet> waves) {
+		this.waves = waves;
+	}	
+
 }
