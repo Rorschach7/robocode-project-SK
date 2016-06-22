@@ -774,7 +774,7 @@ public class TestBot extends TeamRobot {
 						&& setFireBullet(power) != null) {
 					setFire(power);
 					fireCount++;
-					System.out.println("FIRE, LinTarget " + fireCount);
+					//System.out.println("FIRE, LinTarget " + fireCount);
 				}
 			}
 		}
@@ -823,7 +823,7 @@ public class TestBot extends TeamRobot {
 					&& !checkFriendlyFire() && setFireBullet(power) != null) {
 				waves.add(newWave);
 				fireCount++;
-				System.out.println("Fire, Guess Shooting " + fireCount);
+				//System.out.println("Fire, Guess Shooting " + fireCount);
 			}
 			// End of guess shoting
 		}
@@ -1318,9 +1318,7 @@ public class TestBot extends TeamRobot {
 				* target.getInfo().getDistance();
 
 		Point2D enemy = new Point2D(ex, ey);
-		Point2D self = new Point2D(getX(), getY());
-		
-		System.out.println(">Distance " + enemy.distance(self));
+		Point2D self = new Point2D(getX(), getY());		
 		
 		Point2D fwd = new Point2D(Math.sin(getGunHeadingRadians()),
 				Math.cos(getGunHeadingRadians()));
