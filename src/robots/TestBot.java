@@ -3,7 +3,6 @@ package robots;
 import robocode.*;
 import helper.*;
 import helper.Enums.*;
-
 import java.awt.Color;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -41,9 +40,11 @@ public class TestBot extends TeamRobot {
 	private boolean hitRobot;
 	private boolean isEnemyLocked = false;
 	private double bulletVelocity;
+	private boolean isEvading;
+	private Point2D randomPoint;
 
 	// States
-	private State state = State.Evading;
+	private State state = State.Scanning;
 	private MovementPattern movePattern = MovementPattern.Stop;
 	private RadarState radarState;
 	private FireMode fireMode = FireMode.GuessFactor;
@@ -89,7 +90,7 @@ public class TestBot extends TeamRobot {
 		while (true) {
 			scan();
 			if (target.getInfo() != null) {
-				// antiGravMove();
+				//antiGravMove();
 			}
 		}
 	}
@@ -446,11 +447,7 @@ public class TestBot extends TeamRobot {
 				state = State.Scanning;
 			}
 			scanElapsedTime = 0;
-		}
-
-		// Avoid walls
-		// avoidWall = detectCloseWall(Math.toRadians(this.getHeading()));
-		// avoidWall();
+		}	
 
 		// Execute behavior for corresponding state
 		if (state == State.Attacking) {
@@ -576,12 +573,26 @@ public class TestBot extends TeamRobot {
 		}
 
 		if (pattern == MovementPattern.Random) {
-			count++;
-			if (count >= 40) {
-				// TODO change count stuff (only do randMovement once)
-				randomMovement();
-				count = 0;
+			
+			if(isEvading) {
+				System.out.println("Point to reach: " + randomPoint);
+				System.out.println(getX() + " " + getY());
+				// check if we reached desired position				
+				if(randomPoint.distance(getX(), getY()) < 1.0 ) {
+					
+					System.out.println("reached position");
+					
+					isEvading = false;
+					state = State.Attacking;					
+				}
+			} else {
+				System.out.println("Start randomMovement");
+				randomPoint = randomMovement();
+				isEvading = true;
 			}
+						
+			
+		
 		}
 	}
 
@@ -934,18 +945,19 @@ public class TestBot extends TeamRobot {
 		bulletVelocity = 20 - 3 * deltaEnergy;
 
 		// TODO
-		// state = State.Evading;
+		state = State.Evading;
 	}
 
 	/**
 	 * turn the robot in a random direction but not straight to or away from the
 	 * enemy ("straight" is defined in an angle which gets bigger as closer we
 	 * are to the enemy) or to a wall
+	 * @return 
 	 * 
 	 */
-	private void randomMovement() {
+	private Point2D randomMovement() {
 		ScannedRobotEvent bot = target.getInfo();
-
+		
 		// change deltaAngle according to the distance to the enemy
 		double deltaAngle = 30 + (bot.getDistance() / 50) * 5;
 		if (deltaAngle > 80)
@@ -978,11 +990,18 @@ public class TestBot extends TeamRobot {
 		turnTo(randAngle);
 
 		// Random velocity between 5 and 8
-		setMaxVelocity(5 + new Random().nextDouble() * 3);
+		double velo = 5 + new Random().nextDouble() * 3;
+		setMaxVelocity(velo);
 
 		// moves till bullet passes
 		double turnsTillBulletHits = bot.getDistance() / bulletVelocity;
-		setAhead(turnsTillBulletHits / getVelocity());
+		setAhead(100);
+		
+		double x = getX() + Math.sin(Math.toRadians(randAngle) * (100));
+		double y = getY() + Math.cos(Math.toRadians(randAngle) * (100));
+		
+		Point2D point = new Point2D(x, y);		
+		return point;
 	}
 
 	/**
@@ -1299,8 +1318,7 @@ public class TestBot extends TeamRobot {
 		Point2D right = new Point2D(fwd.getY(), -fwd.getX());
 
 		// TODO: use these vectors to create a rectangle in front of our tank
-		// and then check if another tank overlaps
-		// Rectangle
+		// and then check if another tank overlaps		
 		Point2D a = right.multiply(20).add(self);
 		Point2D d = right.multiply(-20).add(self);
 		Point2D b = a.add(fwd.multiply(self.distance(enemy)));
