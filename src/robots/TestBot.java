@@ -31,13 +31,13 @@ public class TestBot extends TeamRobot {
 	private int count = 0; // Count for movement patterns
 	private double EnergyThreshold = 15;
 	private boolean scanStarted = false;
-	private int direction = 1;
 	private boolean bulletHit;
 	private boolean hitRobot;
 	private boolean isEnemyLocked = false;
 	private double bulletVelocity;
 	private boolean isEvading;
 	private double evadeRounds;
+	private int direction;
 
 	// States
 	private State state = State.Scanning;
@@ -224,7 +224,7 @@ public class TestBot extends TeamRobot {
 		double dist = 20;
 		double angle = Math.toDegrees(absBearing(getX(), getY(), x, y));
 		turnTo(angle);
-		setAhead(dist * direction);
+		setAhead(dist * moveDirection);
 	}
 
 	/**
@@ -232,15 +232,15 @@ public class TestBot extends TeamRobot {
 	 * direction the bot needs to move in.
 	 **/
 	private void turnTo(double angle) {
-		double ang = getHeading() - angle;
+		double ang = normaliseBearing(getHeading() - angle);
 		if (ang > 90) {
 			ang -= 180;
-			direction = -1;
+			moveDirection = -1;
 		} else if (ang < -90) {
 			ang += 180;
-			direction = -1;
+			moveDirection = -1;
 		} else {
-			direction = 1;
+			moveDirection = 1;
 		}
 		setTurnLeft(ang);
 	}
@@ -486,7 +486,7 @@ public class TestBot extends TeamRobot {
 			}
 
 			// TODO:
-			runMovementPattern(MovementPattern.AntiGravity); // Needs to be adjusted,
+			 runMovementPattern(MovementPattern.AntiGravity); // Needs to be adjusted,
 														// should try to get
 														// closer to enemy etc
 		}
@@ -582,27 +582,19 @@ public class TestBot extends TeamRobot {
 			if(isEvading) {
 				System.out.println("evading");
 				evadeRounds--;
-//				if(detectCloseWall(getHeading())!= AvoidWall.None){
-//					randomMovement();
-//					System.out.println("new rand move");
-//				}
+				avoidWall = detectCloseWall(getHeading());
+				avoidWall();
+				
 				// check if we reached desired position				
 				if(evadeRounds < 0 ) {
-					evadeRounds = 0;
-//					System.out.println("reached position");
-					
 					isEvading = false;
 					state = State.Attacking;		
-					pattern = MovementPattern.AntiGravity;
 				}
 			} else {
 				System.out.println("Start randomMovement");
 				evadeRounds = randomMovement();
 				isEvading = true;
-			}
-						
-			
-		
+			}	
 		}
 	}
 
@@ -871,19 +863,20 @@ public class TestBot extends TeamRobot {
 		// direction
 		Random rand = new Random();
 		double randAngle;
-		AvoidWall aw;
+		double aW;
 		do {
 			randAngle = rand.nextDouble() * 360;
-			//TODO detect close wall wont work i think
-			aw = detectCloseWall((randAngle+botBearing-deltaAngle/2)%360);
+			aW = (randAngle + heading + botBearing - deltaAngle/2) % 360;
 		} while (randAngle > 0 && randAngle < deltaAngle
 				|| randAngle > 180 && randAngle < 180+deltaAngle
-				|| aw != AvoidWall.None || detectCloseWall(heading) != AvoidWall.None);	
+				|| detectCloseWall(aW) != AvoidWall.None);	
 		
-		randAngle = (heading + botBearing - deltaAngle/2) % 360;
+		randAngle = (randAngle + heading + botBearing - deltaAngle/2) % 360;
 		if (randAngle < 0) {
 			randAngle += 360;
 		}
+//		System.out.println("RANDA: " + randAngle);
+		
 		
 		// turns to rand direction to the bearing to robot has to change
 		turnTo(randAngle);
@@ -895,10 +888,9 @@ public class TestBot extends TeamRobot {
 		// moves till bullet passes
 		double turnsTillBulletHits = bot.getDistance() / bulletVelocity;
 
-		//TODO: change
-		setAhead(100*velo*direction);
+		setAhead(100*velo*moveDirection);
 			
-		return turnsTillBulletHits/2;
+		return turnsTillBulletHits*2/3;
 	}
 
 	/**
@@ -1208,14 +1200,6 @@ public class TestBot extends TeamRobot {
 	public Bot getTarget() {
 		return target;
 	}
-	
-	public int getDirection() {
-		return direction;
-	}
-	
-	public void setDirection(int direction) {
-		this.direction = direction;
-	}
 
 	public List<WaveBullet> getWaves() {
 		return waves;
@@ -1223,6 +1207,14 @@ public class TestBot extends TeamRobot {
 
 	public void setWaves(List<WaveBullet> waves) {
 		this.waves = waves;
-	}	
+	}
 
+	public int getDirection() {
+		return direction;
+	}
+
+	public void setDirection(int direction) {
+		this.direction = direction;
+	}	
+	
 }
