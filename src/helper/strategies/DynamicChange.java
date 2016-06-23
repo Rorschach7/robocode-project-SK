@@ -10,9 +10,7 @@ public class DynamicChange extends GunStrategy {
 	private GuessTargeting guessTargeting = new GuessTargeting();
 	private GunStrategy strategy = linTargeting;
 	
-	// Statistics
-	private double hits = 0;
-	private double misses = 0;	
+	// Statistics	
 	private double acc = 100;
 	private double formerAcc = 100;
 	
@@ -41,12 +39,12 @@ public class DynamicChange extends GunStrategy {
 			// Check if we need to change fire mode
 			if(count >= interval) {
 				formerAcc = acc;
-				acc = hits / (hits + misses) * 100.0;
+				acc = robot.getHits() / (robot.getHits() + robot.getMisses()) * 100.0;
 
 				System.out.println("Current Accuracy " + acc);
 
-				hits = 0;
-				misses = 0;
+				robot.setHits(0);
+				robot.setMisses(0);
 				count = 0;
 				
 				if(acc > formerAcc) {
@@ -65,12 +63,12 @@ public class DynamicChange extends GunStrategy {
 		return fired;
 	}
 	
-	public void hit() {
-		hits++;
+	@Override
+	public double getAccuracy(TestBot robot) {		
+		return acc;
 	}
 	
-	public void miss() {
-		misses++;
+	public String toString(){
+		return "DynamicChange Targeting with " + guessTargeting + " and " + linTargeting;		
 	}
-
 }

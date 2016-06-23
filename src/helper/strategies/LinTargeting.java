@@ -1,5 +1,6 @@
 package helper.strategies;
 
+import helper.FuncLib;
 import robocode.Rules;
 import robocode.ScannedRobotEvent;
 import robots.TestBot;
@@ -42,26 +43,25 @@ public class LinTargeting extends GunStrategy {
 			final double t = Math.min(t1, t2) >= 0 ? Math.min(t1, t2)
 					: Math.max(t1, t2);
 			// Assume enemy stops at walls
-			final double endX = limit(eX + eV * t * Math.sin(eHd),
+			final double endX = FuncLib.limit(eX + eV * t * Math.sin(eHd),
 					ROBOT_WIDTH / 2, robot.getBattleFieldWidth() - ROBOT_WIDTH
 							/ 2);
-			final double endY = limit(eY + eV * t * Math.cos(eHd),
+			final double endY = FuncLib.limit(eY + eV * t * Math.cos(eHd),
 					ROBOT_HEIGHT / 2, robot.getBattleFieldHeight() - ROBOT_HEIGHT
 							/ 2);
 			robot.setTurnGunRightRadians(robocode.util.Utils
 					.normalRelativeAngle(Math.atan2(endX - rX, endY - rY)
 							- robot.getGunHeadingRadians()));
-			if (robot.getGunTurnRemaining() < 0.1 && !robot.checkFriendlyFire()
+			if (robot.getGunTurnRemaining() < 0.05 && !robot.checkFriendlyFire()
 					&& robot.setFireBullet(power) != null) {
 				System.out.println("FIRE, LinTarget ");
 				return true;				
 			}			
 		}
 		return false;		
-	}
+	}	
 	
-	private double limit(double value, double min, double max) {
-		return Math.min(max, Math.max(min, value));
+	public String toString(){
+		return "Linear Targeting";		
 	}
-
 }
