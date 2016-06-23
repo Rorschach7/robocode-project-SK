@@ -5,7 +5,6 @@ import robocode.util.Utils;
 import java.awt.geom.*;     // for Point2D's
 import java.lang.*;         // for Double and Integer objects
 import java.util.ArrayList; // for collection of waves
-
 public class WaveSurfer extends AdvancedRobot {
 	 public static int BINS = 47;
 	    public static double _surfStats[] = new double[BINS]; // we'll use 47 bins
@@ -95,7 +94,7 @@ public class WaveSurfer extends AdvancedRobot {
 	        }
 	    }
 	 
-	    public EnemyWave getClosestSurfableWave() {
+	    private EnemyWave getClosestSurfableWave() {
 	        double closestDistance = 50000; // I juse use some very big number here
 	        EnemyWave surfWave = null;
 	 
@@ -246,7 +245,7 @@ public class WaveSurfer extends AdvancedRobot {
 	    }
 	 
 	    // This can be defined as an inner class if you want.
-	    class EnemyWave {
+	    private class EnemyWave {
 	        Point2D.Double fireLocation;
 	        long fireTime;
 	        double bulletVelocity, directAngle, distanceTraveled;
@@ -292,6 +291,7 @@ public class WaveSurfer extends AdvancedRobot {
 	    }
 	 
 	    public static void setBackAsFront(AdvancedRobot robot, double goAngle) {
+	    	System.out.println("setBackAsFront");
 	        double angle =
 	            Utils.normalRelativeAngle(goAngle - robot.getHeadingRadians());
 	        if (Math.abs(angle) > (Math.PI/2)) {
