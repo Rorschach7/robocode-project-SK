@@ -4,6 +4,7 @@ import robocode.*;
 import helper.*;
 import helper.Enums.*;
 import helper.strategies.*;
+
 import java.awt.Color;
 import java.awt.Point;
 import java.awt.geom.Rectangle2D;
@@ -13,23 +14,23 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
 import robocode.util.Utils;
 import javafx.geometry.Point2D;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
 public class TestBot extends TeamRobot {
-	public static int BINS = 47;
 
 	public static boolean periodicScan = false;
 	public static Rectangle2D.Double _fieldRect = new java.awt.geom.Rectangle2D.Double(
 			18, 18, 764, 564);
-	public static double WALL_STICK = 120;
+	public static double WALL_STICK = 160;
 	public ArrayList<Integer> _surfDirections;
 	public ArrayList<Double> _surfAbsBearings;
 	public Point _myLocation; // our bot's location
-	public static double _surfStats[] = new double[BINS]; // we'll use 47 bins
 
 	// Variables
 	private int nr;
@@ -42,6 +43,7 @@ public class TestBot extends TeamRobot {
 	private boolean isEnemyLocked = false;
 	private double bulletVelocity;	
 	private int fireDirection; 
+	private double bulletPower;
 
 	// States
 	private State state = State.Scanning;	
@@ -72,6 +74,7 @@ public class TestBot extends TeamRobot {
 	private MovementStrategy scanningMovement = new StopMovement(); // Used when we're performing 360 scan
 	private MovementStrategy dodgeBullet = new RandomMovement(); // Used to dodge incoming bullet
 	private MovementStrategy victoryDance = new SpinAroundMovement(); // Use for victory dance
+	private MovementStrategy waveSurfing = new WaveSurfing();
 
 	public void run() {
 
@@ -130,7 +133,7 @@ public class TestBot extends TeamRobot {
 	
 	public void onScannedRobot(ScannedRobotEvent e) {
 		update(e);
-//		collectWaveSurfData(e);
+		collectWaveSurfData(e);
 		
 		// System.out.println("Scanned Robot: " + e.getName());
 
@@ -358,7 +361,8 @@ public class TestBot extends TeamRobot {
 		if (getState() == State.Evading) {
 			// Execute avoiding movement strategy	
 			gunStrategy.execute(this);
-			dodgeBullet.execute(this);			
+//			dodgeBullet.execute(this);	
+			waveSurfing.execute(this);
 		}
 
 		// printStatus();
@@ -393,6 +397,7 @@ public class TestBot extends TeamRobot {
 				&& target.getName().equals(robot.getName())) {
 			double enemyDeltaEnergy = target.getInfo().getEnergy()
 					- robot.getEnergy();
+			bulletPower = enemyDeltaEnergy;
 			if (enemyDeltaEnergy > 0) {
 				detectBullet(enemyDeltaEnergy);
 			}
@@ -473,22 +478,12 @@ public class TestBot extends TeamRobot {
 				data = new Data(robotName);
 				dataList.add(data);
 			}
-
 		}
 	}
 	
 	private void collectWaveSurfData(ScannedRobotEvent robot){
-		Double energyDrop = 0.0;
-		if (!(target.getName().equals("None"))
-				&& target.getName().equals(robot.getName())) {
-			double enemyDeltaEnergy = target.getInfo().getEnergy()
-					- robot.getEnergy();
-			if (enemyDeltaEnergy > 0) {
-				energyDrop = enemyDeltaEnergy;
-			}
-		}
 		
-		System.out.println("start waveSurfing");
+		System.out.println("targetE: " + target.getInfo().getEnergy() + " botE: " + robot.getEnergy());
 		// wave surfing stuff
 		ScannedRobotEvent targetBot = target.getInfo();
 		double absBearing = getHeadingRadians()
@@ -498,8 +493,6 @@ public class TestBot extends TeamRobot {
 		_surfDirections.add(0, new Integer((lateralVelocity >= 0) ? 1
 				: -1));
 		_surfAbsBearings.add(0, new Double(absBearing + Math.PI));
-
-		double bulletPower = energyDrop;
 
 		if (bulletPower < 3.01 && bulletPower > 0.09
 				&& _surfDirections.size() > 2) {
@@ -528,11 +521,9 @@ public class TestBot extends TeamRobot {
 	}
 
 	public void updateWaves() {
-		System.out.println("updateWaves");
 		for (Bot enemy : enemies) {
 			for (int x = 0; x < enemy.getBulletWave().size(); x++) {
 				EnemyWave ew = (EnemyWave) enemy.getBulletWave().get(x);
-
 				ew.setDistanceTraveled((getTime() - ew.getFireTime())
 						* ew.getBulletVelocity());
 				if (ew.getDistanceTraveled() > new Point((int) getX(),
@@ -543,28 +534,6 @@ public class TestBot extends TeamRobot {
 			}
 		}
 	}
-
-	public void doSurfing() {
-		EnemyWave surfWave = getClosestSurfableWave();
-		System.out.println("doSurfing");
-		//TODO surfwave = null
-		if (surfWave == null) {
-			return;
-		}
-
-		double dangerLeft = checkDanger(surfWave, -1);
-		double dangerRight = checkDanger(surfWave, 1);
-
-		double goAngle = FuncLib.absoluteBearing(surfWave.getFireLocation(),
-				_myLocation);
-		if (dangerLeft < dangerRight) {
-			goAngle = wallSmoothing(_myLocation, goAngle - (Math.PI / 2), -1);
-		} else {
-			goAngle = wallSmoothing(_myLocation, goAngle + (Math.PI / 2), 1);
-		}
-
-		setBackAsFront(this, goAngle);
-	}	
 
 	public static void setBackAsFront(AdvancedRobot robot, double goAngle) {
 
@@ -587,24 +556,6 @@ public class TestBot extends TeamRobot {
 		}
 	}
 
-	// CREDIT: Iterative WallSmoothing by Kawigi
-	// - return absolute angle to move at after account for WallSmoothing
-	// robowiki.net?WallSmoothing
-	public double wallSmoothing(Point botLocation, double angle, int orientation) {
-		while (!_fieldRect.contains(project(botLocation, angle, 160))) {
-			angle += orientation * 0.05;
-		}
-		return angle;
-	}
-
-	// CREDIT: from CassiusClay, by PEZ
-	// - returns point length away from sourceLocation, at angle
-	// robowiki.net?CassiusClay
-	public static Point project(Point sourceLocation, double angle,
-			double length) {
-		return new Point((int) (sourceLocation.x + Math.sin(angle) * length),
-				(int) (sourceLocation.y + Math.cos(angle) * length));
-	}
 
 	public EnemyWave getClosestSurfableWave() {
 		double closestDistance = 50000; // I juse use some very big number here
@@ -632,86 +583,6 @@ public class TestBot extends TeamRobot {
 		return surfWave2;
 	}
 
-	public double checkDanger(EnemyWave surfWave, int direction) {
-		int index = getFactorIndex(surfWave,
-				predictPosition(surfWave, direction));
-
-		return _surfStats[index];
-	}
-
-	// Given the EnemyWave that the bullet was on, and the point where we
-	// were hit, calculate the index into our stat array for that factor.
-	public static int getFactorIndex(EnemyWave ew, Point targetLocation) {
-		double offsetAngle = (FuncLib.absoluteBearing(ew.getFireLocation(),
-				targetLocation) - ew.getDirectAngle());
-		double factor = Utils.normalRelativeAngle(offsetAngle)
-				/ maxEscapeAngle(ew.getBulletVelocity()) * ew.getDirection();
-
-		return (int) FuncLib.limit(0, (factor * ((BINS - 1) / 2)) + ((BINS - 1) / 2),
-				BINS - 1);
-	}
-
-	public static double maxEscapeAngle(double velocity) {
-		return Math.asin(8.0 / velocity);
-	}
-
-	
-
-	public Point predictPosition(EnemyWave surfWave, int direction) {
-		Point predictedPosition = (Point) _myLocation.clone();
-		double predictedVelocity = getVelocity();
-		double predictedHeading = getHeadingRadians();
-		double maxTurning, moveAngle, moveDir;
-
-		int counter = 0; // number of ticks in the future
-		boolean intercepted = false;
-
-		do {
-			moveAngle = wallSmoothing(
-					predictedPosition,
-					FuncLib.absoluteBearing(surfWave.getFireLocation(),
-							predictedPosition) + (direction * (Math.PI / 2)),
-					direction)
-					- predictedHeading;
-			moveDir = 1;
-
-			if (Math.cos(moveAngle) < 0) {
-				moveAngle += Math.PI;
-				moveDir = -1;
-			}
-
-			moveAngle = Utils.normalRelativeAngle(moveAngle);
-
-			// maxTurning is built in like this, you can't turn more then this
-			// in one tick
-			maxTurning = Math.PI / 720d
-					* (40d - 3d * Math.abs(predictedVelocity));
-			predictedHeading = Utils.normalRelativeAngle(predictedHeading
-					+ FuncLib.limit(-maxTurning, moveAngle, maxTurning));
-
-			// this one is nice ;). if predictedVelocity and moveDir have
-			// different signs you want to breack down
-			// otherwise you want to accelerate (look at the factor "2")
-			predictedVelocity += (predictedVelocity * moveDir < 0 ? 2 * moveDir
-					: moveDir);
-			predictedVelocity = FuncLib.limit(-8, predictedVelocity, 8);
-
-			// calculate the new predicted position
-			predictedPosition = project(predictedPosition, predictedHeading,
-					predictedVelocity);
-
-			counter++;
-
-			if (predictedPosition.distance(surfWave.getFireLocation()) < surfWave
-					.getDistanceTraveled()
-					+ (counter * surfWave.getBulletVelocity())
-					+ surfWave.getBulletVelocity()) {
-				intercepted = true;
-			}
-		} while (!intercepted && counter < 500);
-
-		return predictedPosition;
-	}	
 
 	/**
 	 * Tries to figure out if enemy tank shoots at us and starts evasive
