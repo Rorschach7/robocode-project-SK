@@ -1,6 +1,7 @@
 package helper;
 
-import helper.Enums.*;
+import helper.strategies.*;
+
 
 public class Data {
 	
@@ -45,9 +46,13 @@ public class Data {
 	 * @param hit Did the bullet hit the target?
 	 * @param fireMode The fire mode used to fire the bullet
 	 */
-	public void BulletHit(boolean hit, FireMode fireMode) {
+	public void BulletHit(boolean hit, GunStrategy strat) {
+		GunStrategy strategy = strat;
+		if(strategy instanceof DynamicChange) {
+			strategy = ((DynamicChange) strat).getCurrentFireStrategy();			
+		}
 		
-		if(fireMode == FireMode.LinearTargeting) {
+		if(strategy instanceof LinTargeting) {
 			if(hit) {
 				linearTargetHits++;
 			} else {
@@ -55,7 +60,7 @@ public class Data {
 			}
 		}
 		
-		if(fireMode == FireMode.GuessFactor) {
+		if(strategy instanceof GuessTargeting) {
 			if(hit) {
 				guessTargetingHits++;
 			} else {

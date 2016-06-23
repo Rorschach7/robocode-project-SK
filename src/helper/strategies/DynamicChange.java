@@ -68,6 +68,10 @@ public class DynamicChange extends GunStrategy {
 		return acc;
 	}
 	
+	public GunStrategy getCurrentFireStrategy() {
+		return strategy;
+	}
+	
 	public String toString(){
 		return "DynamicChange Targeting with " + guessTargeting + " and " + linTargeting;		
 	}
