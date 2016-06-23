@@ -6,8 +6,6 @@ import helper.Enums.*;
 import helper.strategies.*;
 
 import java.awt.Color;
-import java.awt.Point;
-import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -25,15 +23,9 @@ import com.google.gson.JsonSyntaxException;
 public class TestBot extends TeamRobot {
 
 	public static boolean periodicScan = false;
-	public static Rectangle2D.Double _fieldRect = new java.awt.geom.Rectangle2D.Double(
-			18, 18, 764, 564);
-	public static double WALL_STICK = 160;
-	public ArrayList<Integer> _surfDirections;
-	public ArrayList<Double> _surfAbsBearings;
-	public Point _myLocation; // our bot's location
 
 	// Variables
-	private int nr;
+	private int nr; // number to identify in team
 	private boolean gameOver = false;
 	private int moveDirection = 1;// >0 : turn right, <0 : tun left	
 	private double EnergyThreshold = 15;
@@ -59,21 +51,19 @@ public class TestBot extends TeamRobot {
 	private Bot target = new Bot();	
 
 	// Statistics
-	List<Data> dataList = new ArrayList<>();
-	private List<WaveBullet> waves = new ArrayList<WaveBullet>();
+	ArrayList<Data> dataList = new ArrayList<>();	
 	private boolean bestScore = true;
 	private double hits;
 	private double misses;
 
 	// Strategies
 	// Targeting
-	private GunStrategy aimStrategy = new LinTargeting();
+	private GunStrategy aimStrategy = new DynamicChange();
 	// Movement
 	private MovementStrategy attackingMovement = new StopMovement(); // Used most of the time
 	private MovementStrategy scanningMovement = new StopMovement(); // Used when we're performing 360 scan
 	private MovementStrategy dodgeBullet = new RandomMovement(); // Used to dodge incoming bullet
-	private MovementStrategy victoryDance = new SpinAroundMovement(); // Use for victory dance
-	private MovementStrategy waveSurfing = new WaveSurfing();
+	private MovementStrategy victoryDance = new SpinAroundMovement(); // Use for victory dance	
 
 	public void run() {
 
@@ -93,10 +83,8 @@ public class TestBot extends TeamRobot {
 		setAdjustGunForRobotTurn(true);
 		setAdjustRadarForRobotTurn(true);
 		setAdjustRadarForGunTurn(true);
-		_surfDirections = new ArrayList<Integer>();
-		_surfAbsBearings = new ArrayList<Double>();
+		
 		setState(State.Scanning);
-
 
 		while (true) {
 			scan();
@@ -116,7 +104,7 @@ public class TestBot extends TeamRobot {
 	 * Turns the shortest angle possible to come to a heading, then returns the
 	 * direction the bot needs to move in.
 	 **/
-	private void turnTo(double angle) {
+	public void turnTo(double angle) {
 		double ang = FuncLib.normaliseBearing(getHeading() - angle);
 		if (ang > 90) {
 			ang -= 180;
@@ -132,7 +120,19 @@ public class TestBot extends TeamRobot {
 	
 	public void onScannedRobot(ScannedRobotEvent e) {
 		update(e);
-		collectWaveSurfData(e);
+		// Collect data dependent on strategy
+		if(dodgeBullet instanceof WaveSurfing) {
+			((WaveSurfing) dodgeBullet).collectWaveSurfData(this, e); 
+		}
+		if(attackingMovement instanceof WaveSurfing) {
+			((WaveSurfing) attackingMovement).collectWaveSurfData(this, e); 
+		}
+		if(aimStrategy instanceof GuessTargeting) {
+			((GuessTargeting) aimStrategy).collectGuessData(this, e);			
+		}		
+		if(aimStrategy instanceof DynamicChange) {
+			((DynamicChange) aimStrategy).getGuessTargeting().collectGuessData(this, e);	
+		}
 		
 		// System.out.println("Scanned Robot: " + e.getName());
 
@@ -150,11 +150,7 @@ public class TestBot extends TeamRobot {
 				isEnemyLocked = true;
 				runScan(RadarState.Lock);
 			}
-		}
-
-		// Collect data for guess targeting
-		collectData(e);
-
+		}	
 	}
 
 	public void onHitByBullet(HitByBulletEvent event) {
@@ -201,7 +197,7 @@ public class TestBot extends TeamRobot {
 	}
 
 	public void onBulletMissed(BulletMissedEvent event) {
-		findDataByName(target.getName()).BulletHit(false, aimStrategy);
+		FuncLib.findDataByName(target.getName(), dataList).BulletHit(false, aimStrategy);
 		misses++;		
 	}
 
@@ -210,7 +206,7 @@ public class TestBot extends TeamRobot {
 	}
 
 	public void onBulletHit(BulletHitEvent event) {
-		findDataByName(target.getName()).BulletHit(true, aimStrategy);
+		FuncLib.findDataByName(target.getName(), dataList).BulletHit(true, aimStrategy);
 		bulletHit = true;
 		hits++;		
 	}
@@ -318,9 +314,7 @@ public class TestBot extends TeamRobot {
 				setState(State.Scanning);
 			}
 			scanElapsedTime = 0;
-		}
-		
-		System.out.println();
+		}		
 
 		// Execute behavior for corresponding state
 		if (getState() == State.Attacking) {
@@ -361,9 +355,7 @@ public class TestBot extends TeamRobot {
 
 		if (getState() == State.Evading) {
 			// Execute avoiding movement strategy	
-
-//			dodgeBullet.execute(this);	
-			waveSurfing.execute(this);
+			dodgeBullet.execute(this);
 			aimStrategy.execute(this);
 		}
 
@@ -399,7 +391,7 @@ public class TestBot extends TeamRobot {
 				&& target.getName().equals(robot.getName())) {
 			double enemyDeltaEnergy = target.getInfo().getEnergy()
 					- robot.getEnergy();
-			bulletPower = enemyDeltaEnergy;
+			setBulletPower(enemyDeltaEnergy);
 			if (enemyDeltaEnergy > 0) {
 				detectBullet(enemyDeltaEnergy);
 			}
@@ -481,110 +473,7 @@ public class TestBot extends TeamRobot {
 				dataList.add(data);
 			}
 		}
-	}
-	
-	private void collectWaveSurfData(ScannedRobotEvent robot){
-		
-		System.out.println("targetE: " + target.getInfo().getEnergy() + " botE: " + robot.getEnergy());
-		// wave surfing stuff
-		ScannedRobotEvent targetBot = target.getInfo();
-		double absBearing = getHeadingRadians()
-				+ targetBot.getBearingRadians();
-		double lateralVelocity = getVelocity()
-				* Math.sin(targetBot.getBearingRadians());
-		_surfDirections.add(0, new Integer((lateralVelocity >= 0) ? 1
-				: -1));
-		_surfAbsBearings.add(0, new Double(absBearing + Math.PI));
-
-		if (bulletPower < 3.01 && bulletPower > 0.09
-				&& _surfDirections.size() > 2) {
-			EnemyWave ew = new EnemyWave();
-			ew.setFireTime(getTime() - 1);
-			ew.setBulletVelocity(20D - (3D * bulletPower));
-			ew.setDistanceTraveled(20D - (3D * bulletPower));
-			ew.setDirection(((Integer) _surfDirections.get(2))
-					.intValue());
-			ew.setDirectAngle(((Double) _surfAbsBearings.get(2))
-					.doubleValue());
-			ew.setFireLocation((Point) _myLocation.clone()); // last
-																// tick
-
-			target.addBulletWave(ew);
-			// TODO move
-			// doSurfing();
-
-		}
-
-		_myLocation = new Point((int) (getX() + absBearing
-				* targetBot.getDistance()), (int) (getY() + absBearing
-				* targetBot.getDistance()));
-
-		updateWaves();
-	}
-
-	public void updateWaves() {
-		for (Bot enemy : enemies) {
-			for (int x = 0; x < enemy.getBulletWave().size(); x++) {
-				EnemyWave ew = (EnemyWave) enemy.getBulletWave().get(x);
-				ew.setDistanceTraveled((getTime() - ew.getFireTime())
-						* ew.getBulletVelocity());
-				if (ew.getDistanceTraveled() > new Point((int) getX(),
-						(int) getY()).distance(ew.getFireLocation()) + 50) {
-					enemy.getBulletWave().remove(x);
-					x--;
-				}
-			}
-		}
-	}
-
-	public static void setBackAsFront(AdvancedRobot robot, double goAngle) {
-
-		double angle = Utils.normalRelativeAngle(goAngle
-				- robot.getHeadingRadians());
-		if (Math.abs(angle) > (Math.PI / 2)) {
-			if (angle < 0) {
-				robot.setTurnRightRadians(Math.PI + angle);
-			} else {
-				robot.setTurnLeftRadians(Math.PI - angle);
-			}
-			robot.setBack(100);
-		} else {
-			if (angle < 0) {
-				robot.setTurnLeftRadians(-1 * angle);
-			} else {
-				robot.setTurnRightRadians(angle);
-			}
-			robot.setAhead(100);
-		}
-	}
-
-
-	public EnemyWave getClosestSurfableWave() {
-		double closestDistance = 50000; // I juse use some very big number here
-		double closestDist2 = 50000;
-
-		EnemyWave surfWave = null;
-		EnemyWave surfWave2 = null;
-		for (Bot enemy : enemies) {
-			for (int x = 0; x < enemy.getBulletWave().size(); x++) {
-				EnemyWave ew = (EnemyWave) enemy.getBulletWave().get(x);
-				double distance = _myLocation.distance(ew.getFireLocation())
-						- ew.getDistanceTraveled();
-
-				if (distance > ew.getBulletVelocity()
-						&& distance < closestDistance) {
-					surfWave = ew;
-					closestDistance = distance;
-				}
-			}
-			if (closestDistance < closestDist2) {
-				closestDist2 = closestDistance;
-				surfWave2 = surfWave;
-			}
-		}
-		return surfWave2;
-	}
-
+	}	
 
 	/**
 	 * Tries to figure out if enemy tank shoots at us and starts evasive
@@ -736,24 +625,24 @@ public class TestBot extends TeamRobot {
 		}
 	}
 
-	private void collectData(ScannedRobotEvent e) {
-
-		// Collect data
-		double absBearing = getHeadingRadians() + e.getBearingRadians();
-
-		// find our enemy's location:
-		double ex = getX() + Math.sin(absBearing) * e.getDistance();
-		double ey = getY() + Math.cos(absBearing) * e.getDistance();
-
-		// Let's process the waves now:
-		for (int i = 0; i < getWaves().size(); i++) {
-			WaveBullet currentWave = (WaveBullet) getWaves().get(i);
-			if (currentWave.checkHit(ex, ey, getTime())) {
-				getWaves().remove(currentWave);
-				i--;
-			}
-		}
-	}
+//	private void collectGuessData(ScannedRobotEvent e) {
+//
+//		// Collect data
+//		double absBearing = getHeadingRadians() + e.getBearingRadians();
+//
+//		// find our enemy's location:
+//		double ex = getX() + Math.sin(absBearing) * e.getDistance();
+//		double ey = getY() + Math.cos(absBearing) * e.getDistance();
+//
+//		// Let's process the waves now:
+//		for (int i = 0; i < getWaves().size(); i++) {
+//			WaveBullet currentWave = (WaveBullet) getWaves().get(i);
+//			if (currentWave.checkHit(ex, ey, getTime())) {
+//				getWaves().remove(currentWave);
+//				i--;
+//			}
+//		}
+//	}
 
 	/**
 	 * Tries to load the data file with the specified name, return the object if
@@ -812,24 +701,7 @@ public class TestBot extends TeamRobot {
 		}
 	}
 
-	public Data findDataByName(String name) {
-
-		String robotName = name;
-
-		// Check
-		if (name.contains(" ")) {
-			int j = name.indexOf(" ");
-			robotName = name.substring(0, j);
-			// System.out.println("Multiple Instances: " + robotName);
-		}
-
-		for (Data data : dataList) {
-			if (data.getRobotName().equals(robotName)) {
-				return data;
-			}
-		}
-		return null;
-	}
+	
 
 	private boolean checkForData(String name) {
 
@@ -903,14 +775,6 @@ public class TestBot extends TeamRobot {
 		return target;
 	}
 
-	public List<WaveBullet> getWaves() {
-		return waves;
-	}
-
-	public void setWaves(List<WaveBullet> waves) {
-		this.waves = waves;
-	}
-
 	public int getDirection() {
 		return fireDirection;
 	}
@@ -957,5 +821,17 @@ public class TestBot extends TeamRobot {
 
 	public void setState(State state) {
 		this.state = state;
+	}
+
+	public double getBulletPower() {
+		return bulletPower;
+	}
+
+	public void setBulletPower(double bulletPower) {
+		this.bulletPower = bulletPower;
+	}
+	
+	public ArrayList<Data> getDataList() {
+		return dataList;
 	}
 }

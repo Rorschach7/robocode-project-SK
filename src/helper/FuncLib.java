@@ -65,12 +65,31 @@ public class FuncLib {
 	 *            The name of the robot that you want.
 	 * @return the Robot if already spotted and existing, null Otherwise.
 	 */
-	public static Bot findBotByName(String name, ArrayList<Bot> data) {
-		for (Bot bot : data) {
+	public static Bot findBotByName(String name, ArrayList<Bot> bots) {
+		for (Bot bot : bots) {
 			if (bot.getName().equals(name)) {
 				return bot;
 			}
 		}		
+		return null;
+	}
+	
+	public static Data findDataByName(String name, ArrayList<Data> dataList) {
+
+		String robotName = name;
+
+		// Check
+		if (name.contains(" ")) {
+			int j = name.indexOf(" ");
+			robotName = name.substring(0, j);
+			// System.out.println("Multiple Instances: " + robotName);
+		}
+
+		for (Data data : dataList) {
+			if (data.getRobotName().equals(robotName)) {
+				return data;
+			}
+		}
 		return null;
 	}
 

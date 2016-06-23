@@ -1,12 +1,18 @@
 package helper.strategies;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import helper.Data;
+import helper.FuncLib;
 import helper.WaveBullet;
 import robocode.ScannedRobotEvent;
 import robocode.util.Utils;
 import robots.TestBot;
 
 public class GuessTargeting extends GunStrategy {
+	
+	private List<WaveBullet> waves = new ArrayList<WaveBullet>();
 
 	@Override
 	public boolean execute(TestBot robot) {
@@ -25,7 +31,7 @@ public class GuessTargeting extends GunStrategy {
 			}
 		}
 		
-		Data data = robot.findDataByName(enemy.getName());
+		Data data = FuncLib.findDataByName(enemy.getName(), robot.getDataList());
 		int[] currentStats = data.getStats()[(int) (enemy.getDistance() / 100)];
 
 		WaveBullet newWave = new WaveBullet(robot.getX(), robot.getY(), absBearing, power, robot.getDirection(), robot.getTime(), currentStats);
@@ -46,11 +52,30 @@ public class GuessTargeting extends GunStrategy {
 		robot.setTurnGunRightRadians(gunAdjust);
 
 		if (robot.getGunHeat() == 0 && gunAdjust < Math.atan2(9, enemy.getDistance()) && !robot.checkFriendlyFire() && robot.setFireBullet(power) != null) {
-			robot.getWaves().add(newWave);
+			waves.add(newWave);
 			System.out.println("Fire, Guess Shooting ");
 			return true;			
 		}
 		return false;
+	}
+	
+	public void collectGuessData(TestBot robot, ScannedRobotEvent e) {
+
+		// Collect data
+		double absBearing = robot.getHeadingRadians() + e.getBearingRadians();
+
+		// find our enemy's location:
+		double ex = robot.getX() + Math.sin(absBearing) * e.getDistance();
+		double ey = robot.getY() + Math.cos(absBearing) * e.getDistance();
+
+		// Let's process the waves now:
+		for (int i = 0; i < waves.size(); i++) {
+			WaveBullet currentWave = (WaveBullet) waves.get(i);
+			if (currentWave.checkHit(ex, ey, robot.getTime())) {
+				waves.remove(currentWave);
+				i--;
+			}
+		}
 	}
 	
 	public String toString(){

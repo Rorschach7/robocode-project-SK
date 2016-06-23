@@ -3,10 +3,12 @@ package helper.strategies;
 import java.awt.Point;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
+
 import helper.Bot;
 import helper.EnemyWave;
 import helper.FuncLib;
 import robocode.AdvancedRobot;
+import robocode.ScannedRobotEvent;
 import robocode.util.Utils;
 import robots.TestBot;
 
@@ -16,7 +18,8 @@ public class WaveSurfing extends MovementStrategy{
 	TestBot robot;
 	public static int BINS = 47;
 	public static double _surfStats[] = new double[BINS]; // we'll use 47 bins
-
+	public ArrayList<Integer> _surfDirections = new ArrayList<>();
+	public ArrayList<Double> _surfAbsBearings = new ArrayList<>();
 	public static Rectangle2D.Double _fieldRect = new java.awt.geom.Rectangle2D.Double(
 			18, 18, 764, 564);
 
@@ -191,6 +194,62 @@ public class WaveSurfing extends MovementStrategy{
 
 		return (int) FuncLib.limit(0, (factor * ((BINS - 1) / 2)) + ((BINS - 1) / 2),
 				BINS - 1);
+	}
+	
+	public void collectWaveSurfData(TestBot robot, ScannedRobotEvent event) {
+		if(robot.getTarget().getInfo() == null) {
+			return;
+		}
+		//System.out.println("targetE: " + target.getInfo().getEnergy() + " botE: " + robot.getEnergy());
+		// wave surfing stuff
+		ScannedRobotEvent targetBot = robot.getTarget().getInfo();
+		double absBearing = robot.getHeadingRadians()
+				+ targetBot.getBearingRadians();
+		double lateralVelocity = robot.getVelocity()
+				* Math.sin(targetBot.getBearingRadians());
+		_surfDirections.add(0, new Integer((lateralVelocity >= 0) ? 1
+				: -1));
+		_surfAbsBearings.add(0, new Double(absBearing + Math.PI));
+
+		if (robot.getBulletPower() < 3.01 && robot.getBulletPower() > 0.09
+				&& _surfDirections.size() > 2) {
+			EnemyWave ew = new EnemyWave();
+			ew.setFireTime(robot.getTime() - 1);
+			ew.setBulletVelocity(20D - (3D * robot.getBulletPower()));
+			ew.setDistanceTraveled(20D - (3D * robot.getBulletPower()));
+			ew.setDirection(((Integer) _surfDirections.get(2))
+					.intValue());
+			ew.setDirectAngle(((Double) _surfAbsBearings.get(2))
+					.doubleValue());
+			ew.setFireLocation((Point) _myLocation.clone()); // last
+																// tick
+
+			robot.getTarget().addBulletWave(ew);
+			// TODO move
+			// doSurfing();
+
+		}
+
+		_myLocation = new Point((int) (robot.getX() + absBearing
+				* targetBot.getDistance()), (int) (robot.getY() + absBearing
+				* targetBot.getDistance()));
+
+		updateWaves(robot);
+	}
+	
+	public void updateWaves(TestBot robot) {
+		for (Bot enemy : enemies) {
+			for (int x = 0; x < enemy.getBulletWave().size(); x++) {
+				EnemyWave ew = (EnemyWave) enemy.getBulletWave().get(x);
+				ew.setDistanceTraveled((robot.getTime() - ew.getFireTime())
+						* ew.getBulletVelocity());
+				if (ew.getDistanceTraveled() > new Point((int) robot.getX(),
+						(int) robot.getY()).distance(ew.getFireLocation()) + 50) {
+					enemy.getBulletWave().remove(x);
+					x--;
+				}
+			}
+		}
 	}
 
 	public static double maxEscapeAngle(double velocity) {

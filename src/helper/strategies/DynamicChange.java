@@ -1,6 +1,7 @@
 package helper.strategies;
 
 import helper.Data;
+import helper.FuncLib;
 import robots.TestBot;
 
 public class DynamicChange extends GunStrategy {
@@ -22,9 +23,8 @@ public class DynamicChange extends GunStrategy {
 	public boolean execute(TestBot robot) {
 		boolean fired;
 		// Check if we have reliable data about our target
-		Data data = robot.findDataByName(robot.getTarget().getName());
-		if(data.isReliable()) {
-			System.out.println("Data is reliable");
+		Data data = FuncLib.findDataByName(robot.getTarget().getName(), robot.getDataList());
+		if(data.isReliable()) {			
 			if(data.getGuessAccuracy() > data.getLinAccuracy()) {
 				fired = guessTargeting.execute(robot);
 			} else {
@@ -70,6 +70,10 @@ public class DynamicChange extends GunStrategy {
 	
 	public GunStrategy getCurrentFireStrategy() {
 		return strategy;
+	}
+	
+	public GuessTargeting getGuessTargeting() {
+		return guessTargeting;
 	}
 	
 	public String toString(){
