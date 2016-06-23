@@ -41,7 +41,7 @@ public class TestBot extends TeamRobot {
 	private boolean hitRobot;
 	private boolean isEnemyLocked = false;
 	private double bulletVelocity;	
-	private int fireDirection;
+	private int fireDirection; 
 
 	// States
 	private State state = State.Scanning;	

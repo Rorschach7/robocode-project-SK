@@ -1,8 +1,6 @@
 package helper;
 
 import java.util.ArrayList;
-import java.util.List;
-
 import robocode.*;
 
 public class Bot {
@@ -10,8 +8,7 @@ public class Bot {
 	private String name;
 	private boolean isDead;
 	private ScannedRobotEvent info;
-	private ArrayList<EnemyWave> bulletWave;
-	//private List<WaveBullet> waves = new ArrayList<WaveBullet>();
+	private ArrayList<EnemyWave> bulletWave;	
 	
 	public Bot() {
 		name = "None";
@@ -33,12 +30,12 @@ public class Bot {
 		isDead = false;
 	}
 	
-	public ArrayList getBulletWave() {
+	public ArrayList<EnemyWave> getBulletWave() {
 		return bulletWave;
 	}
 
-	public void setBulletWave(ArrayList bulletWave) {
-		bulletWave = bulletWave;
+	public void setBulletWave(ArrayList<EnemyWave> bulletWave) {
+		this.bulletWave = bulletWave;
 	}
 
 	public String getName() {
