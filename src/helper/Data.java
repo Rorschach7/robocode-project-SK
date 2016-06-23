@@ -1,10 +1,7 @@
 package helper;
 
-import helper.Enums.*;
-import helper.strategies.DynamicChange;
-import helper.strategies.GuessTargeting;
-import helper.strategies.GunStrategy;
-import helper.strategies.LinTargeting;
+import helper.strategies.*;
+
 
 public class Data {
 	

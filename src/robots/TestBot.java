@@ -45,8 +45,7 @@ public class TestBot extends TeamRobot {
 
 	// States
 	private State state = State.Scanning;	
-	private RadarState radarState;
-	private FireMode fireMode = FireMode.GuessFactor;
+	private RadarState radarState;	
 
 	// Time Handles in rounds
 	private double scanElapsedTime;
@@ -66,7 +65,7 @@ public class TestBot extends TeamRobot {
 
 	// Strategies
 	// Targeting
-	private GunStrategy gunStrategy = new LinTargeting();
+	private GunStrategy aimStrategy = new LinTargeting();
 	// Movement
 	private MovementStrategy attackingMovement = new StopMovement(); // Used most of the time
 	private MovementStrategy scanningMovement = new StopMovement(); // Used when we're performing 360 scan
@@ -199,7 +198,7 @@ public class TestBot extends TeamRobot {
 	}
 
 	public void onBulletMissed(BulletMissedEvent event) {
-		findDataByName(target.getName()).BulletHit(false, fireMode);
+		findDataByName(target.getName()).BulletHit(false, aimStrategy);
 		misses++;		
 	}
 
@@ -208,7 +207,7 @@ public class TestBot extends TeamRobot {
 	}
 
 	public void onBulletHit(BulletHitEvent event) {
-		findDataByName(target.getName()).BulletHit(true, fireMode);
+		findDataByName(target.getName()).BulletHit(true, aimStrategy);
 		bulletHit = true;
 		hits++;		
 	}
@@ -241,7 +240,7 @@ public class TestBot extends TeamRobot {
 		// data.printData(true);
 		// }
 		
-		System.out.println(gunStrategy + " acc: " + gunStrategy.getAccuracy(this));
+		System.out.println(aimStrategy + " acc: " + aimStrategy.getAccuracy(this));
 
 		gameOver = true;
 
@@ -317,6 +316,8 @@ public class TestBot extends TeamRobot {
 			}
 			scanElapsedTime = 0;
 		}
+		
+		System.out.println();
 
 		// Execute behavior for corresponding state
 		if (getState() == State.Attacking) {
@@ -333,7 +334,7 @@ public class TestBot extends TeamRobot {
 			}
 
 			if (isEnemyLocked) {
-				gunStrategy.execute(this);
+				aimStrategy.execute(this);
 			} else {
 				System.out.println("Enemy no longer locked.");
 				// Use sweep to find target again
@@ -357,7 +358,7 @@ public class TestBot extends TeamRobot {
 
 		if (getState() == State.Evading) {
 			// Execute avoiding movement strategy	
-			gunStrategy.execute(this);
+			aimStrategy.execute(this);
 			dodgeBullet.execute(this);			
 		}
 
