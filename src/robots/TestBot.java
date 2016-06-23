@@ -3,8 +3,8 @@ package robots;
 import robocode.*;
 import helper.*;
 import helper.Enums.*;
-import helper.strategies.DynamicChange;
-import helper.strategies.GunStrategy;
+import helper.strategies.*;
+
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Point;
@@ -16,8 +16,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
 import robocode.util.Utils;
 import javafx.geometry.Point2D;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
@@ -44,7 +46,7 @@ public class TestBot extends TeamRobot {
 
 	// States
 	private State state = State.Scanning;
-	private MovementPattern movePattern = MovementPattern.Stop;
+	//private MovementPattern movePattern = MovementPattern.Stop;
 	private RadarState radarState;
 	private FireMode fireMode = FireMode.GuessFactor;
 
@@ -66,7 +68,16 @@ public class TestBot extends TeamRobot {
 	private double misses;
 
 	// Strategies
+	// Targeting
 	private GunStrategy gunStrategy = new DynamicChange();
+	// Movement
+	private MovementStrategy attackingMovement = new AntiGravity(); // Used most of the time
+	private MovementStrategy scanningMovement = new StopMovement(); // Used when we're performing 360 scan
+	private MovementStrategy dodgeBullet = new RandomMovement(); // Used to dodge incoming bullet
+	private MovementStrategy victoryDance = new SpinAroundMovement(); // Use for victory dance
+	
+	
+	private double evadeRounds;
 
 	public void run() {
 
@@ -87,147 +98,18 @@ public class TestBot extends TeamRobot {
 		setAdjustRadarForRobotTurn(true);
 		setAdjustRadarForGunTurn(true);
 
-		state = State.Scanning;
+		setState(State.Scanning);
 
 		while (true) {
 			scan();
 		}
-	}
-
-	/**
-	 * gets the absolute bearing between to x,y coordinates
-	 * 
-	 * @param x1
-	 * @param y1
-	 * @param x2
-	 * @param y2
-	 * @return
-	 */
-	public double absBearing(double x1, double y1, double x2, double y2) {
-		double xo = x2 - x1;
-		double yo = y2 - y1;
-		double h = getRange(x1, y1, x2, y2);
-		if (xo > 0 && yo > 0) {
-			return Math.asin(xo / h);
-		}
-		if (xo > 0 && yo < 0) {
-			return Math.PI - Math.asin(xo / h);
-		}
-		if (xo < 0 && yo < 0) {
-			return Math.PI + Math.asin(-xo / h);
-		}
-		if (xo < 0 && yo > 0) {
-			return 2.0 * Math.PI - Math.asin(-xo / h);
-		}
-		return 0;
-	}
-
-	private int midpointcount = 0; // Number of turns since that strength was
-									// changed.
-	private double midpointstrength = 0; // The strength of the gravity point in
-											// the
-
-	private double evadeRounds;
-
-	// middle of the field
-	/**
-	 * the anti Gravity move
-	 */
-	private void antiGravMove() {
-		double xforce = 0;
-		double yforce = 0;
-		double force;
-		double ang;
-		GravPoint p;
-		ArrayList<Bot> allBots = enemies;
-		for (Bot bot : team) {
-			if (!bot.equals(this)) {
-				allBots.add(bot);
-			}
-		}
-		// cycle through all bots. If they are alive, they are repulsive.
-		// Calculate the force on us
-
-		for (Bot bot : allBots) {
-			if (!bot.isDead()) {
-
-				double angleToBot = bot.getInfo().getBearing();
-
-				// Calculate the angle to the scanned robot
-				double angle = Math
-						.toRadians((getHeading() + angleToBot % 360));
-
-				// Calculate the coordinates of the robot
-				double botX = (getX() + Math.sin(angle)
-						* bot.getInfo().getDistance());
-				double botY = (getY() + Math.cos(angle)
-						* bot.getInfo().getDistance());
-
-				p = new GravPoint(botX, botY, -1000);
-
-				force = p.power
-						/ Math.pow(getRange(getX(), getY(), p.x, p.y), 2);
-
-				// Find the bearing from the point to us
-				ang = normaliseBearing(Math.PI / 2
-						- Math.atan2(getY() - p.y, getX() - p.x));
-				// Add the components of this force to the total force in their
-				// respective directions
-				xforce += Math.sin(ang) * force;
-				yforce += Math.cos(ang) * force;
-			}
-		}
-
-		/**
-		 * The next section adds a middle point with a random (positive or
-		 * negative) strength. The strength changes every 5 turns, and goes
-		 * between -1000 and 1000. This gives a better overall movement.
-		 **/
-
-		midpointcount++;
-		if (midpointcount > 5) {
-			midpointcount = 0;
-			midpointstrength = (Math.random() * 2000) - 1000;
-		}
-		p = new GravPoint(getBattleFieldWidth() / 2,
-				getBattleFieldHeight() / 2, midpointstrength);
-		force = p.power / Math.pow(getRange(getX(), getY(), p.x, p.y), 1.5);
-		ang = normaliseBearing(Math.PI / 2
-				- Math.atan2(getY() - p.y, getX() - p.x));
-		xforce += Math.sin(ang) * force;
-		yforce += Math.cos(ang) * force;
-
-		/**
-		 * The following four lines add wall avoidance. They will only affect us
-		 * if the bot is close to the walls due to the force from the walls
-		 * decreasing at a power 3.
-		 **/
-		xforce += 5000 / Math.pow(
-				getRange(getX(), getY(), getBattleFieldWidth(), getY()), 3);
-		xforce -= 5000 / Math.pow(getRange(getX(), getY(), 0, getY()), 3);
-		yforce += 5000 / Math.pow(
-				getRange(getX(), getY(), getX(), getBattleFieldHeight()), 3);
-		yforce -= 5000 / Math.pow(getRange(getX(), getY(), getX(), 0), 3);
-
-		// Move in the direction of our resolved force.
-		goTo(getX() - xforce, getY() - yforce);
-	}
-
-	// if a bearing is not within the -pi to pi range, alters it to provide the
-	// shortest angle
-	private double normaliseBearing(double ang) {
-		if (ang > Math.PI)
-			ang -= 2 * Math.PI;
-		if (ang < -Math.PI)
-			ang += 2 * Math.PI;
-		return ang;
-	}
+	}	
 
 	/** Move in the direction of an x and y coordinate **/
-	private void goTo(double x, double y) {
+	public void goTo(double x, double y) {
 		setMaxVelocity(Rules.MAX_VELOCITY);
 		double dist = 20;
-		double angle = Math.toDegrees(absBearing(getX(), getY(), x, y));
+		double angle = Math.toDegrees(FuncLib.absBearing(getX(), getY(), x, y));
 		turnTo(angle);
 		setAhead(dist * moveDirection);
 	}
@@ -237,7 +119,7 @@ public class TestBot extends TeamRobot {
 	 * direction the bot needs to move in.
 	 **/
 	private void turnTo(double angle) {
-		double ang = normaliseBearing(getHeading() - angle);
+		double ang = FuncLib.normaliseBearing(getHeading() - angle);
 		if (ang > 90) {
 			ang -= 180;
 			moveDirection = -1;
@@ -249,15 +131,7 @@ public class TestBot extends TeamRobot {
 		}
 		setTurnLeft(ang);
 	}
-
-	/** Returns the distance between two points **/
-	private double getRange(double x1, double y1, double x2, double y2) {
-		double x = x2 - x1;
-		double y = y2 - y1;
-		double range = Math.sqrt(x * x + y * y);
-		return range;
-	}
-
+	
 	public void onScannedRobot(ScannedRobotEvent e) {
 		update(e);
 
@@ -288,7 +162,7 @@ public class TestBot extends TeamRobot {
 		attacker.init(event);
 
 		if (getEnergy() <= EnergyThreshold) {
-			state = State.Evading;
+			setState(State.Evading);
 		}
 	}
 
@@ -323,11 +197,8 @@ public class TestBot extends TeamRobot {
 	}
 
 	public void onHitWall(HitWallEvent event) {
-
-		if (movePattern == MovementPattern.UpAndDown) {
-			moveDirection *= -1;
-			setAhead(moveDirection * 5);
-		}
+		// Should never happen
+		System.out.println("We crashed into a wall. How could that happen? :(");
 	}
 
 	public void onBulletMissed(BulletMissedEvent event) {
@@ -365,7 +236,7 @@ public class TestBot extends TeamRobot {
 				data.win();
 			}
 			System.out.println("VICTORY");
-			// TODO: Victory Dance
+			victoryDance.execute(this);
 		}
 
 		// Debug
@@ -434,30 +305,23 @@ public class TestBot extends TeamRobot {
 		if (gameOver) {
 			return;
 		}
-
-		// TODO: when should this run
-		if (target.getInfo() != null) {
-			// TODO: hat bei rand dazwischen gepfuscht ;D
-			// antiGravMove();
-		}
-
+		
 		// Increment Time Handler
 		if (!scanStarted) {
 			scanElapsedTime++;
 		}
-
+		
 		// Periodic scan
 		if (scanElapsedTime >= scanTimer) {
 			if (enemies != null && enemies.size() > 1 && periodicScan) {
-
-				state = State.Scanning;
+				setState(State.Scanning);
 			}
 			scanElapsedTime = 0;
 		}
 
 		// Execute behavior for corresponding state
-		if (state == State.Attacking) {
-
+		if (getState() == State.Attacking) {
+			
 			// Find Target
 			findTarget();
 
@@ -474,7 +338,7 @@ public class TestBot extends TeamRobot {
 			} else {
 				System.out.println("Enemy no longer locked.");
 				// Use sweep to find target again
-				// do a full scan if target cannot be found after five rounds
+				// do a full scan if target cannot be found after given rounds
 				if (sweepScanCount < 10
 						&& (radarState == RadarState.Lock || radarState == RadarState.Sweep)) {
 					runScan(RadarState.Sweep);
@@ -483,24 +347,18 @@ public class TestBot extends TeamRobot {
 					sweepScanCount = 0;
 				}
 			}
-
-			// TODO:
-			runMovementPattern(MovementPattern.AntiGravity); // Needs to be
-																// adjusted,
-			// should try to get
-			// closer to enemy etc
+			// Attacking movement strategy
+			attackingMovement.execute(this);
 		}
 
-		if (state == State.Scanning) {
-
-			runMovementPattern(MovementPattern.Stop);
-
+		if (getState() == State.Scanning) {
+			scanningMovement.execute(this);
 			runScan(RadarState.FullScan);
 		}
 
-		if (state == State.Evading) {
-			// TODO maybe add more than evading
-			runMovementPattern(MovementPattern.Random);
+		if (getState() == State.Evading) {
+			// Execute avoiding movement strategy			
+			dodgeBullet.execute(this);			
 		}
 
 		// printStatus();
@@ -514,7 +372,7 @@ public class TestBot extends TeamRobot {
 	 *            the movement pattern that should be executed
 	 */
 	private void runMovementPattern(MovementPattern pattern) {
-		movePattern = pattern;
+		//movePattern = pattern;
 
 		// Pattern Eight
 		if (pattern == MovementPattern.Eight) {
@@ -568,7 +426,7 @@ public class TestBot extends TeamRobot {
 		}
 
 		if (pattern == MovementPattern.AntiGravity) {
-			antiGravMove();
+			attackingMovement.execute(this);
 		}
 
 		// Pattern Up and Down
@@ -587,7 +445,7 @@ public class TestBot extends TeamRobot {
 				if (new Point((int) getX(), (int) getY()).distance(randPoint) < 10
 						|| evadeRounds < 0) {
 					isEvading = false;
-					state = State.Attacking;
+					setState(State.Attacking);
 					System.out.println("reached point");
 				}
 			} else {
@@ -603,12 +461,11 @@ public class TestBot extends TeamRobot {
 	 */
 	public void printStatus() {
 		System.out
-				.println("---------------------------------------------------------");
-		System.out.println("Current MovementPattern: " + movePattern.name());
+				.println("---------------------------------------------------------");		
 		System.out.println("Count: " + count);
 		System.out.println("Target: " + target.getName());
 		System.out.println("Attacker: " + attacker.getName());
-		System.out.println("State: " + state);
+		System.out.println("State: " + getState());
 		System.out.println("RadarState: " + radarState);
 		System.out
 				.println("---------------------------------------------------------");
@@ -837,10 +694,10 @@ public class TestBot extends TeamRobot {
 
 		// TODO bot hits bot
 
-		bulletVelocity = 20 - 3 * deltaEnergy;
+		setBulletVelocity(20 - 3 * deltaEnergy);
 
 		// TODO
-		state = State.Evading;
+		setState(State.Evading);
 		// runMovementPattern(MovementPattern.Random);
 	}
 
@@ -870,7 +727,7 @@ public class TestBot extends TeamRobot {
 		double velo = 5 + new Random().nextDouble() * 3;
 		setMaxVelocity(velo);
 
-		double turnsTillBulletHits = bot.getDistance() / bulletVelocity;
+		double turnsTillBulletHits = bot.getDistance() / getBulletVelocity();
 
 		// to stop rand movement when the bullet passed or
 		evadeRounds = turnsTillBulletHits * 2 / 3;
@@ -942,7 +799,7 @@ public class TestBot extends TeamRobot {
 			} else if (getRadarTurnRemaining() < 10) {
 				// Scan finished
 				scanStarted = false;
-				state = State.Attacking;
+				setState(State.Attacking);
 			}
 		}
 
@@ -1166,8 +1023,7 @@ public class TestBot extends TeamRobot {
 		Point2D fwd = new Point2D(Math.sin(getGunHeadingRadians()),
 				Math.cos(getGunHeadingRadians()));
 		Point2D right = new Point2D(fwd.getY(), -fwd.getX());
-
-		// TODO: use these vectors to create a rectangle in front of our tank
+	
 		// and then check if another tank overlaps
 		Point2D a = right.multiply(20).add(self);
 		Point2D d = right.multiply(-20).add(self);
@@ -1238,5 +1094,29 @@ public class TestBot extends TeamRobot {
 	
 	public void setMisses(double misses) {
 		this.misses = misses;
+	}
+	
+	public ArrayList<Bot> getEnemies() {
+		return enemies;
+	}
+	
+	public ArrayList<Bot> getTeam() {
+		return team;
+	}
+
+	public double getBulletVelocity() {
+		return bulletVelocity;
+	}
+
+	public void setBulletVelocity(double bulletVelocity) {
+		this.bulletVelocity = bulletVelocity;
+	}
+
+	public State getState() {
+		return state;
+	}
+
+	public void setState(State state) {
+		this.state = state;
 	}
 }
