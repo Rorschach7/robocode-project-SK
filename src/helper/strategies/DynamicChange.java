@@ -62,4 +62,13 @@ public class DynamicChange extends GunStrategy {
 		}		
 		return fired;
 	}
+	
+	@Override
+	public double getAccuracy(TestBot robot) {		
+		return acc;
+	}
+	
+	public String toString(){
+		return "DynamicChange Targeting with " + guessTargeting + " and " + linTargeting;		
+	}
 }

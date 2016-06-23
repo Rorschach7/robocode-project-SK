@@ -50,6 +50,10 @@ public class FuncLib {
 		return 0;
 	}
 	
+	public static double limit(double value, double min, double max) {
+		return Math.min(max, Math.max(min, value));
+	}
+	
 	/**
 	 * Finds the specefied robot among all spotted enemies.	 * 
 	 * @param name

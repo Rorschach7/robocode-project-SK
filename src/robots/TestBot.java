@@ -32,8 +32,7 @@ public class TestBot extends TeamRobot {
 	private int nr;
 	private boolean gameOver = false;
 	private int moveDirection = 1;// >0 : turn right, <0 : tun left
-	private int turnDirection = 1;
-	private int count = 0; // Count for movement patterns
+	private int turnDirection = 1;	
 	private double EnergyThreshold = 15;
 	private boolean scanStarted = false;
 	private boolean bulletHit;
@@ -42,7 +41,7 @@ public class TestBot extends TeamRobot {
 	private double bulletVelocity;
 	private boolean isEvading;
 	private Point randPoint;
-	private int direction;
+	private int direction; // TODO: Two direction variables?
 
 	// States
 	private State state = State.Scanning;
@@ -69,9 +68,9 @@ public class TestBot extends TeamRobot {
 
 	// Strategies
 	// Targeting
-	private GunStrategy gunStrategy = new DynamicChange();
+	private GunStrategy gunStrategy = new LinTargeting();
 	// Movement
-	private MovementStrategy attackingMovement = new AntiGravity(); // Used most of the time
+	private MovementStrategy attackingMovement = new StopMovement(); // Used most of the time
 	private MovementStrategy scanningMovement = new StopMovement(); // Used when we're performing 360 scan
 	private MovementStrategy dodgeBullet = new RandomMovement(); // Used to dodge incoming bullet
 	private MovementStrategy victoryDance = new SpinAroundMovement(); // Use for victory dance
@@ -243,6 +242,8 @@ public class TestBot extends TeamRobot {
 		// for (Data data : dataList) {
 		// data.printData(true);
 		// }
+		
+		System.out.println(gunStrategy + " acc: " + gunStrategy.getAccuracy(this));
 
 		gameOver = true;
 
@@ -357,112 +358,21 @@ public class TestBot extends TeamRobot {
 		}
 
 		if (getState() == State.Evading) {
-			// Execute avoiding movement strategy			
+			// Execute avoiding movement strategy	
+			gunStrategy.execute(this);
 			dodgeBullet.execute(this);			
 		}
 
 		// printStatus();
 		isEnemyLocked = false;
-	}
-
-	/**
-	 * Executes the specified movement pattern
-	 * 
-	 * @param pattern
-	 *            the movement pattern that should be executed
-	 */
-	private void runMovementPattern(MovementPattern pattern) {
-		//movePattern = pattern;
-
-		// Pattern Eight
-		if (pattern == MovementPattern.Eight) {
-
-			if (count < 80) {
-				setTurnRight(turnDirection * 45);
-				setAhead(10);
-			} else {
-				setTurnRight(turnDirection * -45);
-				setAhead(10);
-			}
-
-			count++;
-			if (count == 160) {
-				count = 0;
-			}
-			return;
-		}
-
-		// Pattern Circle
-		if (pattern == MovementPattern.Circle) {
-
-			setTurnRight(turnDirection * 10);
-			setAhead(10);
-
-			count++;
-			if (count == 100) {
-				count = 0;
-			}
-			return;
-		}
-
-		// Pattern Scanning
-		if (pattern == MovementPattern.Scanning) {
-
-			setTurnRight(10);
-			setAhead(35);
-
-			count++;
-			if (count == 100) {
-				count = 0;
-			}
-			return;
-		}
-
-		// Pattern Stop
-		if (pattern == MovementPattern.Stop) {
-
-			// Do nothing
-			setMaxVelocity(0);
-		}
-
-		if (pattern == MovementPattern.AntiGravity) {
-			attackingMovement.execute(this);
-		}
-
-		// Pattern Up and Down
-		if (pattern == MovementPattern.UpAndDown) {
-			setMaxVelocity(Rules.MAX_VELOCITY * 0.75);
-			setAhead(moveDirection * 10);
-
-		}
-
-		if (pattern == MovementPattern.Random) {
-			if (isEvading) {
-				System.out.println("evading");
-				goTo(randPoint.getX(), randPoint.getY());
-				evadeRounds--;
-				// check if we reached desired position
-				if (new Point((int) getX(), (int) getY()).distance(randPoint) < 10
-						|| evadeRounds < 0) {
-					isEvading = false;
-					setState(State.Attacking);
-					System.out.println("reached point");
-				}
-			} else {
-				//System.out.println("Start randomMovement");
-				//randPoint = randomMovement();
-				isEvading = true;
-			}
-		}
-	}
+	}	
 
 	/**
 	 * Prints current status information
 	 */
 	public void printStatus() {
 		System.out
-				.println("---------------------------------------------------------");		
-		System.out.println("Count: " + count);
+				.println("---------------------------------------------------------");				
 		System.out.println("Target: " + target.getName());
 		System.out.println("Attacker: " + attacker.getName());
 		System.out.println("State: " + getState());

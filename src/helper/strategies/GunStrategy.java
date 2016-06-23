@@ -10,5 +10,10 @@ public abstract class GunStrategy {
 	 * @return true if the gun was fired, false if not
 	 */
 	public abstract boolean execute(TestBot robot);
+	
+	public double getAccuracy(TestBot robot) {
+		double acc = robot.getHits() / (robot.getHits() + robot.getMisses()) * 100.0;
+		return acc;
+	}
 
 }

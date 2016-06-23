@@ -52,5 +52,9 @@ public class GuessTargeting extends GunStrategy {
 		}
 		return false;
 	}
-
+	
+	public String toString(){
+		return "Guess Factor Targeting";		
+	}
+	
 }
