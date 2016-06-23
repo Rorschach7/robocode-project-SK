@@ -13,11 +13,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
-
 import robocode.util.Utils;
 import javafx.geometry.Point2D;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
@@ -44,11 +41,10 @@ public class TestBot extends TeamRobot {
 	private boolean hitRobot;
 	private boolean isEnemyLocked = false;
 	private double bulletVelocity;	
-	private int direction; // TODO: Two direction variables?
+	private int fireDirection;
 
 	// States
-	private State state = State.Scanning;
-	//private MovementPattern movePattern = MovementPattern.Stop;
+	private State state = State.Scanning;	
 	private RadarState radarState;
 	private FireMode fireMode = FireMode.GuessFactor;
 
@@ -59,8 +55,7 @@ public class TestBot extends TeamRobot {
 	private ArrayList<Bot> enemies = new ArrayList<>();
 	private ArrayList<Bot> team = new ArrayList<>();
 	private Bot attacker = new Bot(); // Robot which last attacked us
-	private Bot target = new Bot();
-	private AvoidWall avoidWall;
+	private Bot target = new Bot();	
 
 	// Statistics
 	List<Data> dataList = new ArrayList<>();
@@ -351,17 +346,8 @@ public class TestBot extends TeamRobot {
 					sweepScanCount = 0;
 				}
 			}
-
-
-			// TODO:
-			//runMovementPattern(MovementPattern.AntiGravity); // Needs to be
-			// adjusted,
-//			runMovementPattern(MovementPattern.WaveSurfing);
-			// should try to get
-			// closer to enemy etc
-			// Attacking movement strategy
+			
 			attackingMovement.execute(this);
-
 		}
 
 		if (getState() == State.Scanning) {
@@ -569,7 +555,7 @@ public class TestBot extends TeamRobot {
 		double dangerLeft = checkDanger(surfWave, -1);
 		double dangerRight = checkDanger(surfWave, 1);
 
-		double goAngle = absoluteBearing(surfWave.getFireLocation(),
+		double goAngle = FuncLib.absoluteBearing(surfWave.getFireLocation(),
 				_myLocation);
 		if (dangerLeft < dangerRight) {
 			goAngle = wallSmoothing(_myLocation, goAngle - (Math.PI / 2), -1);
@@ -578,11 +564,7 @@ public class TestBot extends TeamRobot {
 		}
 
 		setBackAsFront(this, goAngle);
-	}
-
-	public static double absoluteBearing(Point source, Point target) {
-		return Math.atan2(target.x - source.x, target.y - source.y);
-	}
+	}	
 
 	public static void setBackAsFront(AdvancedRobot robot, double goAngle) {
 
@@ -660,12 +642,12 @@ public class TestBot extends TeamRobot {
 	// Given the EnemyWave that the bullet was on, and the point where we
 	// were hit, calculate the index into our stat array for that factor.
 	public static int getFactorIndex(EnemyWave ew, Point targetLocation) {
-		double offsetAngle = (absoluteBearing(ew.getFireLocation(),
+		double offsetAngle = (FuncLib.absoluteBearing(ew.getFireLocation(),
 				targetLocation) - ew.getDirectAngle());
 		double factor = Utils.normalRelativeAngle(offsetAngle)
 				/ maxEscapeAngle(ew.getBulletVelocity()) * ew.getDirection();
 
-		return (int) limit(0, (factor * ((BINS - 1) / 2)) + ((BINS - 1) / 2),
+		return (int) FuncLib.limit(0, (factor * ((BINS - 1) / 2)) + ((BINS - 1) / 2),
 				BINS - 1);
 	}
 
@@ -673,9 +655,7 @@ public class TestBot extends TeamRobot {
 		return Math.asin(8.0 / velocity);
 	}
 
-	public static double limit(double min, double value, double max) {
-		return Math.max(min, Math.min(value, max));
-	}
+	
 
 	public Point predictPosition(EnemyWave surfWave, int direction) {
 		Point predictedPosition = (Point) _myLocation.clone();
@@ -689,7 +669,7 @@ public class TestBot extends TeamRobot {
 		do {
 			moveAngle = wallSmoothing(
 					predictedPosition,
-					absoluteBearing(surfWave.getFireLocation(),
+					FuncLib.absoluteBearing(surfWave.getFireLocation(),
 							predictedPosition) + (direction * (Math.PI / 2)),
 					direction)
 					- predictedHeading;
@@ -707,14 +687,14 @@ public class TestBot extends TeamRobot {
 			maxTurning = Math.PI / 720d
 					* (40d - 3d * Math.abs(predictedVelocity));
 			predictedHeading = Utils.normalRelativeAngle(predictedHeading
-					+ limit(-maxTurning, moveAngle, maxTurning));
+					+ FuncLib.limit(-maxTurning, moveAngle, maxTurning));
 
 			// this one is nice ;). if predictedVelocity and moveDir have
 			// different signs you want to breack down
 			// otherwise you want to accelerate (look at the factor "2")
 			predictedVelocity += (predictedVelocity * moveDir < 0 ? 2 * moveDir
 					: moveDir);
-			predictedVelocity = limit(-8, predictedVelocity, 8);
+			predictedVelocity = FuncLib.limit(-8, predictedVelocity, 8);
 
 			// calculate the new predicted position
 			predictedPosition = project(predictedPosition, predictedHeading,
@@ -731,97 +711,7 @@ public class TestBot extends TeamRobot {
 		} while (!intercepted && counter < 500);
 
 		return predictedPosition;
-	}
-
-	
-
-	/**
-	 * Calculates future position and checks whether the tank will collide with
-	 * a wall or not.
-	 * 
-	 * @return true, if wall will be hit. Otherwise false.
-	 */
-	private boolean avoidWall() {
-		double turnDegree = 10;
-		double heading = this.getHeading();
-
-		if (moveDirection != 1) {
-			heading = (heading + 180) % 360;
-		}
-		if (avoidWall == AvoidWall.East) {
-			if (heading > 0 && heading <= 90)
-				setTurnLeft(turnDegree);
-			else if (heading > 90 && heading <= 180)
-				setTurnRight(turnDegree);
-			else
-				avoidWall = AvoidWall.None;
-			return true;
-		}
-		if (avoidWall == AvoidWall.West) {
-			if (heading > 270 && heading <= 360)
-				setTurnRight(turnDegree);
-			else if (heading > 180 && heading <= 270)
-				setTurnLeft(turnDegree);
-			else
-				avoidWall = AvoidWall.None;
-			return true;
-		}
-		if (avoidWall == AvoidWall.North) {
-			if (heading > 270 && heading <= 360)
-				setTurnLeft(turnDegree);
-			else if (heading > 0 && heading <= 90)
-				setTurnRight(turnDegree);
-			else
-				avoidWall = AvoidWall.None;
-			return true;
-		}
-		if (avoidWall == AvoidWall.South) {
-			if (heading > 90 && heading <= 180)
-				setTurnLeft(turnDegree);
-			else if (heading > 180 && heading <= 270)
-				setTurnRight(turnDegree);
-			else
-				avoidWall = AvoidWall.None;
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * To separate avoid and detection (problems with movement otherwise)
-	 * 
-	 * @return true if you will hit the wall soon
-	 */
-	private AvoidWall detectCloseWall(double heading) {
-		double fieldWith = getBattleFieldWidth();
-		double fieldHeight = getBattleFieldHeight();
-		AvoidWall aW = AvoidWall.None;
-
-		if (moveDirection != 1) {
-			heading = (heading + 180) % 360;
-		}
-
-		double xDist = getX() + Math.sin(Math.toRadians(heading)) * WALL_STICK;
-		double yDist = getY() + Math.cos(Math.toRadians(heading)) * WALL_STICK;
-
-		if (xDist >= fieldWith - 36 || aW == AvoidWall.East) {
-			// going to hit east wall
-			aW = AvoidWall.East;
-		}
-		if (xDist <= 18 || aW == AvoidWall.West) {
-			// going to hit west wall
-			aW = AvoidWall.West;
-		}
-		if (yDist >= fieldHeight - 36 || aW == AvoidWall.North) {
-			// going to hit north wall
-			aW = AvoidWall.North;
-		}
-		if (yDist <= 18 || aW == AvoidWall.South) {
-			// going to hit south wall
-			aW = AvoidWall.South;
-		}
-		return aW;
-	}
+	}	
 
 	/**
 	 * Tries to figure out if enemy tank shoots at us and starts evasive
@@ -843,15 +733,10 @@ public class TestBot extends TeamRobot {
 		double wallDmg = target.getInfo().getVelocity() * 0.5 - 1;
 		if (deltaEnergy == wallDmg) {
 			return;
-		}
+		}		
 
-		// TODO bot hits bot
-
-		setBulletVelocity(20 - 3 * deltaEnergy);
-
-		// TODO
-		setState(State.Evading);
-		// runMovementPattern(MovementPattern.Random);
+		setBulletVelocity(20 - 3 * deltaEnergy);		
+		setState(State.Evading);		
 	}
 
 	/**
@@ -1154,11 +1039,11 @@ public class TestBot extends TeamRobot {
 	}
 
 	public int getDirection() {
-		return direction;
+		return fireDirection;
 	}
 
 	public void setDirection(int direction) {
-		this.direction = direction;
+		this.fireDirection = direction;
 	}
 	
 	public double getHits() {

@@ -1,5 +1,6 @@
 package helper;
 
+import java.awt.Point;
 import java.util.ArrayList;
 
 public class FuncLib {
@@ -48,6 +49,10 @@ public class FuncLib {
 			return 2.0 * Math.PI - Math.asin(-xo / h);
 		}
 		return 0;
+	}
+	
+	public static double absoluteBearing(Point source, Point target) {
+		return Math.atan2(target.x - source.x, target.y - source.y);
 	}
 	
 	public static double limit(double value, double min, double max) {
