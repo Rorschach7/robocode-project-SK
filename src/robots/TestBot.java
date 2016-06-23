@@ -332,10 +332,7 @@ public class TestBot extends TeamRobot {
 
 	public void onBulletMissed(BulletMissedEvent event) {
 		findDataByName(target.getName()).BulletHit(false, fireMode);
-		if (gunStrategy instanceof DynamicChange) {
-			DynamicChange dynamic = (DynamicChange) gunStrategy;
-			dynamic.miss();
-		}
+		misses++;		
 	}
 
 	public void onWin(WinEvent event) {
@@ -345,10 +342,7 @@ public class TestBot extends TeamRobot {
 	public void onBulletHit(BulletHitEvent event) {
 		findDataByName(target.getName()).BulletHit(true, fireMode);
 		bulletHit = true;
-		if (gunStrategy instanceof DynamicChange) {
-			DynamicChange dynamic = (DynamicChange) gunStrategy;
-			dynamic.hit();
-		}
+		hits++;		
 	}
 
 	public void onDeath(DeathEvent event) {
@@ -1228,5 +1222,21 @@ public class TestBot extends TeamRobot {
 
 	public void setDirection(int direction) {
 		this.direction = direction;
+	}
+	
+	public double getHits() {
+		return hits;
+	}
+	
+	public void setHits(double hits) {
+		this.hits = hits;
+	}
+	
+	public double getMisses() {
+		return misses;
+	}
+	
+	public void setMisses(double misses) {
+		this.misses = misses;
 	}
 }
