@@ -1,5 +1,7 @@
 package helper;
 
+import java.util.ArrayList;
+
 public class FuncLib {
 
 	// if a bearing is not within the -pi to pi range, alters it to provide the
@@ -46,6 +48,21 @@ public class FuncLib {
 			return 2.0 * Math.PI - Math.asin(-xo / h);
 		}
 		return 0;
+	}
+	
+	/**
+	 * Finds the specefied robot among all spotted enemies.	 * 
+	 * @param name
+	 *            The name of the robot that you want.
+	 * @return the Robot if already spotted and existing, null Otherwise.
+	 */
+	public static Bot findBotByName(String name, ArrayList<Bot> data) {
+		for (Bot bot : data) {
+			if (bot.getName().equals(name)) {
+				return bot;
+			}
+		}		
+		return null;
 	}
 
 }

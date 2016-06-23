@@ -334,7 +334,7 @@ public class TestBot extends TeamRobot {
 			}
 
 			if (isEnemyLocked) {
-				fireGun();
+				gunStrategy.execute(this);
 			} else {
 				System.out.println("Enemy no longer locked.");
 				// Use sweep to find target again
@@ -449,8 +449,8 @@ public class TestBot extends TeamRobot {
 					System.out.println("reached point");
 				}
 			} else {
-				System.out.println("Start randomMovement");
-				randPoint = randomMovement();
+				//System.out.println("Start randomMovement");
+				//randPoint = randomMovement();
 				isEvading = true;
 			}
 		}
@@ -568,16 +568,7 @@ public class TestBot extends TeamRobot {
 		}
 	}
 
-	/**
-	 * Fires the tank's gun. Uses linear targeting and gun power dependent on
-	 * distance between tank and enemy
-	 * 
-	 * @param target
-	 *            the robot we want to shoot
-	 */
-	private void fireGun() {
-		gunStrategy.execute(this);
-	}
+	
 
 	/**
 	 * Calculates future position and checks whether the tank will collide with
@@ -898,22 +889,6 @@ public class TestBot extends TeamRobot {
 				i--;
 			}
 		}
-	}
-
-	/**
-	 * Finds the specefied robot among all spotted enemies.
-	 * 
-	 * @param name
-	 *            The name of the robot that you want.
-	 * @return the Robot if already spotted and existing, null Otherwise.
-	 */
-	private Bot findBotByName(String name) {
-		for (int i = 0; i < enemies.size(); i++) {
-			if (enemies.get(i).getName().equals(name)) {
-				return enemies.get(i);
-			}
-		}
-		return null;
 	}
 
 	/**
