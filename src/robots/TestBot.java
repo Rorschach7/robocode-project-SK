@@ -6,6 +6,9 @@ import helper.Enums.*;
 import helper.strategies.DynamicChange;
 import helper.strategies.GunStrategy;
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -21,10 +24,10 @@ import com.google.gson.JsonSyntaxException;
 
 public class TestBot extends TeamRobot {
 
-	public static boolean periodicScan = false;	
+	public static boolean periodicScan = false;
 
 	// Variables
-	private int nr;	
+	private int nr;
 	private boolean gameOver = false;
 	private int moveDirection = 1;// >0 : turn right, <0 : tun left
 	private int turnDirection = 1;
@@ -36,7 +39,7 @@ public class TestBot extends TeamRobot {
 	private boolean isEnemyLocked = false;
 	private double bulletVelocity;
 	private boolean isEvading;
-	private double evadeRounds;
+	private Point randPoint;
 	private int direction;
 
 	// States
@@ -61,9 +64,9 @@ public class TestBot extends TeamRobot {
 	private boolean bestScore = true;
 	private double hits;
 	private double misses;
-	
+
 	// Strategies
-	private GunStrategy gunStrategy = new DynamicChange();	
+	private GunStrategy gunStrategy = new DynamicChange();
 
 	public void run() {
 
@@ -87,7 +90,7 @@ public class TestBot extends TeamRobot {
 		state = State.Scanning;
 
 		while (true) {
-			scan();			
+			scan();
 		}
 	}
 
@@ -123,6 +126,8 @@ public class TestBot extends TeamRobot {
 									// changed.
 	private double midpointstrength = 0; // The strength of the gravity point in
 											// the
+
+	private double evadeRounds;
 
 	// middle of the field
 	/**
@@ -162,7 +167,7 @@ public class TestBot extends TeamRobot {
 
 				force = p.power
 						/ Math.pow(getRange(getX(), getY(), p.x, p.y), 2);
-				
+
 				// Find the bearing from the point to us
 				ang = normaliseBearing(Math.PI / 2
 						- Math.atan2(getY() - p.y, getX() - p.x));
@@ -327,7 +332,7 @@ public class TestBot extends TeamRobot {
 
 	public void onBulletMissed(BulletMissedEvent event) {
 		findDataByName(target.getName()).BulletHit(false, fireMode);
-		if(gunStrategy instanceof DynamicChange) {
+		if (gunStrategy instanceof DynamicChange) {
 			DynamicChange dynamic = (DynamicChange) gunStrategy;
 			dynamic.miss();
 		}
@@ -340,7 +345,7 @@ public class TestBot extends TeamRobot {
 	public void onBulletHit(BulletHitEvent event) {
 		findDataByName(target.getName()).BulletHit(true, fireMode);
 		bulletHit = true;
-		if(gunStrategy instanceof DynamicChange) {
+		if (gunStrategy instanceof DynamicChange) {
 			DynamicChange dynamic = (DynamicChange) gunStrategy;
 			dynamic.hit();
 		}
@@ -435,11 +440,11 @@ public class TestBot extends TeamRobot {
 		if (gameOver) {
 			return;
 		}
-		
+
 		// TODO: when should this run
 		if (target.getInfo() != null) {
-//			TODO: hat bei rand dazwischen gepfuscht ;D
-//			antiGravMove();
+			// TODO: hat bei rand dazwischen gepfuscht ;D
+			// antiGravMove();
 		}
 
 		// Increment Time Handler
@@ -454,7 +459,7 @@ public class TestBot extends TeamRobot {
 				state = State.Scanning;
 			}
 			scanElapsedTime = 0;
-		}	
+		}
 
 		// Execute behavior for corresponding state
 		if (state == State.Attacking) {
@@ -470,8 +475,8 @@ public class TestBot extends TeamRobot {
 				runScan(RadarState.Sweep);
 			}
 
-			if (isEnemyLocked) {				
-				fireGun();		
+			if (isEnemyLocked) {
+				fireGun();
 			} else {
 				System.out.println("Enemy no longer locked.");
 				// Use sweep to find target again
@@ -486,9 +491,10 @@ public class TestBot extends TeamRobot {
 			}
 
 			// TODO:
-			 runMovementPattern(MovementPattern.AntiGravity); // Needs to be adjusted,
-														// should try to get
-														// closer to enemy etc
+			runMovementPattern(MovementPattern.AntiGravity); // Needs to be
+																// adjusted,
+			// should try to get
+			// closer to enemy etc
 		}
 
 		if (state == State.Scanning) {
@@ -566,8 +572,8 @@ public class TestBot extends TeamRobot {
 			// Do nothing
 			setMaxVelocity(0);
 		}
-		
-		if(pattern == MovementPattern.AntiGravity) {
+
+		if (pattern == MovementPattern.AntiGravity) {
 			antiGravMove();
 		}
 
@@ -579,22 +585,22 @@ public class TestBot extends TeamRobot {
 		}
 
 		if (pattern == MovementPattern.Random) {
-			if(isEvading) {
+			if (isEvading) {
 				System.out.println("evading");
+				goTo(randPoint.getX(), randPoint.getY());
 				evadeRounds--;
-				avoidWall = detectCloseWall(getHeading());
-				avoidWall();
-				
-				// check if we reached desired position				
-				if(evadeRounds < 0 ) {
+				// check if we reached desired position
+				if (new Point((int) getX(), (int) getY()).distance(randPoint) < 10
+						|| evadeRounds < 0) {
 					isEvading = false;
-					state = State.Attacking;		
+					state = State.Attacking;
+					System.out.println("reached point");
 				}
 			} else {
 				System.out.println("Start randomMovement");
-				evadeRounds = randomMovement();
+				randPoint = randomMovement();
 				isEvading = true;
-			}	
+			}
 		}
 	}
 
@@ -841,56 +847,63 @@ public class TestBot extends TeamRobot {
 
 		// TODO
 		state = State.Evading;
-//		runMovementPattern(MovementPattern.Random);
+		// runMovementPattern(MovementPattern.Random);
 	}
 
 	/**
-	 * turn the robot in a random direction but not straight to or away from the
-	 * enemy ("straight" is defined in an angle which gets bigger as closer we
-	 * are to the enemy) or to a wall
-	 * @return 
+	 * returns a random Point to evade to, which is not inside a wall or
+	 * straight to/away from the enemy
 	 * 
+	 * @return Point point to evade to
 	 */
-	private double randomMovement() {
+
+	private Point randomMovement() {
 		ScannedRobotEvent bot = target.getInfo();
 		double botBearing = bot.getBearing();
 		double heading = getHeading();
-		
+		Rectangle field = new Rectangle(new Point(16, 16), new Dimension(
+				(int) getBattleFieldWidth() - 32,
+				(int) getBattleFieldHeight() - 32));
+
 		// TODO: change deltaAngle according to the distance to the enemy
-		double deltaAngle = 120;
-		
-		// gives a random angle which is not to the enemy or the opposite
-		// direction
+		double deltaAngle = 100;
+
 		Random rand = new Random();
+		Point target = new Point();
 		double randAngle;
-		double aW;
-		do {
-			randAngle = rand.nextDouble() * 360;
-			aW = (randAngle + heading + botBearing - deltaAngle/2) % 360;
-		} while (randAngle > 0 && randAngle < deltaAngle
-				|| randAngle > 180 && randAngle < 180+deltaAngle
-				|| detectCloseWall(aW) != AvoidWall.None);	
-		
-		randAngle = (randAngle + heading + botBearing - deltaAngle/2) % 360;
-		if (randAngle < 0) {
-			randAngle += 360;
-		}
-//		System.out.println("RANDA: " + randAngle);
-		
-		
-		// turns to rand direction to the bearing to robot has to change
-		turnTo(randAngle);
 
 		// Random velocity between 5 and 8
 		double velo = 5 + new Random().nextDouble() * 3;
 		setMaxVelocity(velo);
 
-		// moves till bullet passes
 		double turnsTillBulletHits = bot.getDistance() / bulletVelocity;
 
-		setAhead(100*velo*moveDirection);
-			
-		return turnsTillBulletHits*2/3;
+		// to stop rand movement when the bullet passed or
+		evadeRounds = turnsTillBulletHits * 2 / 3;
+
+		// distance to move to dodge bullet
+		double dist = turnsTillBulletHits * 2 / 3 * velo;
+
+		// gives a random angle which is not to the enemy or the opposite
+		// direction
+		do {
+			randAngle = rand.nextDouble() * 360;
+			double randAngTotal = (randAngle + heading + botBearing - deltaAngle / 2) % 360;
+			if (randAngTotal < 0) {
+				randAngTotal += 360;
+			}
+			double tx = getX() + dist * Math.sin(Math.toRadians(randAngTotal));
+			double ty = getY() + dist * Math.cos(Math.toRadians(randAngTotal));
+			target.setLocation(tx, ty);
+		} while (randAngle > 0 && randAngle < deltaAngle || randAngle > 180
+				&& randAngle < 180 + deltaAngle || !field.contains(target));
+
+		// System.out.println("pos: " + getX() + " " + getY());
+		// System.out.println("ang: " + randAngTotal);
+		// System.out.println("dist: " + dist);
+		// System.out.println("target: " + target);
+
+		return target;
 	}
 
 	/**
@@ -1050,7 +1063,7 @@ public class TestBot extends TeamRobot {
 			}
 		}
 		return null;
-	}	
+	}
 
 	/**
 	 * Tries to load the data file with the specified name, return the object if
@@ -1154,14 +1167,14 @@ public class TestBot extends TeamRobot {
 				* target.getInfo().getDistance();
 
 		Point2D enemy = new Point2D(ex, ey);
-		Point2D self = new Point2D(getX(), getY());		
-		
+		Point2D self = new Point2D(getX(), getY());
+
 		Point2D fwd = new Point2D(Math.sin(getGunHeadingRadians()),
 				Math.cos(getGunHeadingRadians()));
 		Point2D right = new Point2D(fwd.getY(), -fwd.getX());
 
 		// TODO: use these vectors to create a rectangle in front of our tank
-		// and then check if another tank overlaps		
+		// and then check if another tank overlaps
 		Point2D a = right.multiply(20).add(self);
 		Point2D d = right.multiply(-20).add(self);
 		Point2D b = a.add(fwd.multiply(self.distance(enemy)));
@@ -1196,7 +1209,7 @@ public class TestBot extends TeamRobot {
 		}
 		return false;
 	}
-	
+
 	public Bot getTarget() {
 		return target;
 	}
@@ -1215,6 +1228,5 @@ public class TestBot extends TeamRobot {
 
 	public void setDirection(int direction) {
 		this.direction = direction;
-	}	
-	
+	}
 }
