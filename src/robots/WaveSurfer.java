@@ -291,7 +291,6 @@ public class WaveSurfer extends AdvancedRobot {
 	    }
 	 
 	    public static void setBackAsFront(AdvancedRobot robot, double goAngle) {
-	    	System.out.println("setBackAsFront");
 	        double angle =
 	            Utils.normalRelativeAngle(goAngle - robot.getHeadingRadians());
 	        if (Math.abs(angle) > (Math.PI/2)) {

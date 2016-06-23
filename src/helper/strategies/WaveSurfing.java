@@ -3,7 +3,6 @@ package helper.strategies;
 import java.awt.Point;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
-
 import helper.Bot;
 import helper.EnemyWave;
 import helper.FuncLib;
@@ -22,6 +21,7 @@ public class WaveSurfing extends MovementStrategy{
 	public ArrayList<Double> _surfAbsBearings = new ArrayList<>();
 	public static Rectangle2D.Double _fieldRect = new java.awt.geom.Rectangle2D.Double(
 			18, 18, 764, 564);
+	private int moveDirection;
 
 	@Override
 	public void execute(TestBot robot) {
@@ -29,13 +29,12 @@ public class WaveSurfing extends MovementStrategy{
 		enemies = robot.getEnemies();
 		_myLocation = new Point((int)robot.getX(), (int)robot.getY());
 		robot.setMaxVelocity(8);
+		moveDirection = robot.getMoveDirection();
 		
 		EnemyWave surfWave = getClosestSurfableWave();
 		if (surfWave == null) {
 			return;
 		}
-
-		System.out.println("got waves");
 		double dangerLeft = checkDanger(surfWave, -1);
 		double dangerRight = checkDanger(surfWave, 1);
 
@@ -75,7 +74,7 @@ public class WaveSurfing extends MovementStrategy{
 		Point predictedPosition = (Point) _myLocation.clone();
 		double predictedVelocity = robot.getVelocity();
 		double predictedHeading = robot.getHeadingRadians();
-		double maxTurning, moveAngle, moveDir;
+		double maxTurning, moveAngle;
 
 		int counter = 0; // number of ticks in the future
 		boolean intercepted = false;
@@ -87,11 +86,11 @@ public class WaveSurfing extends MovementStrategy{
 							predictedPosition) + (direction * (Math.PI / 2)),
 					direction)
 					- predictedHeading;
-			moveDir = 1;
+			moveDirection = 1;
 
 			if (Math.cos(moveAngle) < 0) {
 				moveAngle += Math.PI;
-				moveDir = -1;
+				moveDirection = -1;
 			}
 
 			moveAngle = Utils.normalRelativeAngle(moveAngle);
@@ -106,8 +105,8 @@ public class WaveSurfing extends MovementStrategy{
 			// this one is nice ;). if predictedVelocity and moveDir have
 			// different signs you want to breack down
 			// otherwise you want to accelerate (look at the factor "2")
-			predictedVelocity += (predictedVelocity * moveDir < 0 ? 2 * moveDir
-					: moveDir);
+			predictedVelocity += (predictedVelocity * moveDirection < 0 ? 2 * moveDirection
+					: moveDirection);
 			predictedVelocity = FuncLib.limit(-8, predictedVelocity, 8);
 
 			// calculate the new predicted position
@@ -138,7 +137,6 @@ public class WaveSurfing extends MovementStrategy{
 			} else {
 				robot.setTurnLeftRadians(Math.PI - angle);
 			}
-			System.out.println("set back");
 			robot.setBack(100);
 		} else {
 			if (angle < 0) {
@@ -146,7 +144,6 @@ public class WaveSurfing extends MovementStrategy{
 			} else {
 				robot.setTurnRightRadians(angle);
 			}
-			System.out.println("set ahead");
 			robot.setAhead(100);
 		}
 	}

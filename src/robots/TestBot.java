@@ -834,4 +834,12 @@ public class TestBot extends TeamRobot {
 	public ArrayList<Data> getDataList() {
 		return dataList;
 	}
+	
+	public int getMoveDirection() {
+		return moveDirection;
+	}
+
+	public void setMoveDirection(int moveDirection) {
+		this.moveDirection = moveDirection;
+	}
 }
