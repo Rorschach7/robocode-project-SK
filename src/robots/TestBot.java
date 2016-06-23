@@ -37,7 +37,7 @@ public class TestBot extends TeamRobot {
 	private boolean isEnemyLocked = false;
 	private double bulletVelocity;
 	private boolean isEvading;
-	private Point2D randomPoint;
+	private double evadeRounds;
 
 	// States
 	private State state = State.Scanning;
@@ -162,6 +162,7 @@ public class TestBot extends TeamRobot {
 
 				force = p.power
 						/ Math.pow(getRange(getX(), getY(), p.x, p.y), 2);
+				
 				// Find the bearing from the point to us
 				ang = normaliseBearing(Math.PI / 2
 						- Math.atan2(getY() - p.y, getX() - p.x));
@@ -222,29 +223,26 @@ public class TestBot extends TeamRobot {
 		setMaxVelocity(Rules.MAX_VELOCITY);
 		double dist = 20;
 		double angle = Math.toDegrees(absBearing(getX(), getY(), x, y));
-		double r = turnTo(angle);
-		setAhead(dist * r);
+		turnTo(angle);
+		setAhead(dist * direction);
 	}
 
 	/**
 	 * Turns the shortest angle possible to come to a heading, then returns the
 	 * direction the bot needs to move in.
 	 **/
-	private int turnTo(double angle) {
-		double ang;
-		int dir;
-		ang = normaliseBearing(getHeading() - angle);
+	private void turnTo(double angle) {
+		double ang = getHeading() - angle;
 		if (ang > 90) {
 			ang -= 180;
-			dir = -1;
+			direction = -1;
 		} else if (ang < -90) {
 			ang += 180;
-			dir = -1;
+			direction = -1;
 		} else {
-			dir = 1;
+			direction = 1;
 		}
 		setTurnLeft(ang);
-		return dir;
 	}
 
 	/** Returns the distance between two points **/
@@ -440,7 +438,8 @@ public class TestBot extends TeamRobot {
 		
 		// TODO: when should this run
 		if (target.getInfo() != null) {
-			antiGravMove();
+//			TODO: hat bei rand dazwischen gepfuscht ;D
+//			antiGravMove();
 		}
 
 		// Increment Time Handler
@@ -580,21 +579,25 @@ public class TestBot extends TeamRobot {
 		}
 
 		if (pattern == MovementPattern.Random) {
-			
 			if(isEvading) {
-				System.out.println("Point to reach: " + randomPoint);
-				System.out.println(getX() + " " + getY());
+				System.out.println("evading");
+				evadeRounds--;
+//				if(detectCloseWall(getHeading())!= AvoidWall.None){
+//					randomMovement();
+//					System.out.println("new rand move");
+//				}
 				// check if we reached desired position				
-				if(randomPoint.distance(getX(), getY()) < 1.0 ) {
-					
-					System.out.println("reached position");
+				if(evadeRounds < 0 ) {
+					evadeRounds = 0;
+//					System.out.println("reached position");
 					
 					isEvading = false;
-					state = State.Attacking;					
+					state = State.Attacking;		
+					pattern = MovementPattern.AntiGravity;
 				}
 			} else {
 				System.out.println("Start randomMovement");
-				randomPoint = randomMovement();
+				evadeRounds = randomMovement();
 				isEvading = true;
 			}
 						
@@ -787,7 +790,7 @@ public class TestBot extends TeamRobot {
 	private AvoidWall detectCloseWall(double heading) {
 		double fieldWith = getBattleFieldWidth();
 		double fieldHeight = getBattleFieldHeight();
-		double avoidDistance = 60 + 10 * Rules.MAX_VELOCITY;
+		double avoidDistance = 120;
 		AvoidWall aW = AvoidWall.None;
 
 		if (moveDirection != 1) {
@@ -845,7 +848,8 @@ public class TestBot extends TeamRobot {
 		bulletVelocity = 20 - 3 * deltaEnergy;
 
 		// TODO
-		//state = State.Evading;
+		state = State.Evading;
+//		runMovementPattern(MovementPattern.Random);
 	}
 
 	/**
@@ -855,37 +859,32 @@ public class TestBot extends TeamRobot {
 	 * @return 
 	 * 
 	 */
-	private Point2D randomMovement() {
+	private double randomMovement() {
 		ScannedRobotEvent bot = target.getInfo();
+		double botBearing = bot.getBearing();
+		double heading = getHeading();
 		
-		// change deltaAngle according to the distance to the enemy
-		double deltaAngle = 30 + (bot.getDistance() / 50) * 5;
-		if (deltaAngle > 80)
-			deltaAngle = 80;
-
-		double angleDeg = (this.getHeading() + bot.getBearing()) % 360;
-		if (angleDeg < 0) {
-			angleDeg += 360;
-		}
-
-		double deltaMin = angleDeg - deltaAngle;
-		if (deltaMin < 0) {
-			deltaMin += 180;
-		}
-
-		double deltaMax = angleDeg + deltaAngle;
-
+		// TODO: change deltaAngle according to the distance to the enemy
+		double deltaAngle = 120;
+		
 		// gives a random angle which is not to the enemy or the opposite
 		// direction
 		Random rand = new Random();
 		double randAngle;
+		AvoidWall aw;
 		do {
 			randAngle = rand.nextDouble() * 360;
-		} while (randAngle < deltaMin && randAngle > deltaMax
-				|| randAngle < (deltaMin + 180) % 360
-				&& randAngle > (deltaMax + 180) % 360
-				|| detectCloseWall(randAngle) != AvoidWall.None);
-
+			//TODO detect close wall wont work i think
+			aw = detectCloseWall((randAngle+botBearing-deltaAngle/2)%360);
+		} while (randAngle > 0 && randAngle < deltaAngle
+				|| randAngle > 180 && randAngle < 180+deltaAngle
+				|| aw != AvoidWall.None || detectCloseWall(heading) != AvoidWall.None);	
+		
+		randAngle = (heading + botBearing - deltaAngle/2) % 360;
+		if (randAngle < 0) {
+			randAngle += 360;
+		}
+		
 		// turns to rand direction to the bearing to robot has to change
 		turnTo(randAngle);
 
@@ -895,13 +894,11 @@ public class TestBot extends TeamRobot {
 
 		// moves till bullet passes
 		double turnsTillBulletHits = bot.getDistance() / bulletVelocity;
-		setAhead(100);
-		
-		double x = getX() + Math.sin(Math.toRadians(randAngle) * (100));
-		double y = getY() + Math.cos(Math.toRadians(randAngle) * (100));
-		
-		Point2D point = new Point2D(x, y);		
-		return point;
+
+		//TODO: change
+		setAhead(100*velo*direction);
+			
+		return turnsTillBulletHits/2;
 	}
 
 	/**
