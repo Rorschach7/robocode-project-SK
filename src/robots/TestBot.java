@@ -37,16 +37,13 @@ public class TestBot extends TeamRobot {
 	// Variables
 	private int nr;
 	private boolean gameOver = false;
-	private int moveDirection = 1;// >0 : turn right, <0 : tun left
-	private int turnDirection = 1;	
+	private int moveDirection = 1;// >0 : turn right, <0 : tun left	
 	private double EnergyThreshold = 15;
 	private boolean scanStarted = false;
 	private boolean bulletHit;
 	private boolean hitRobot;
 	private boolean isEnemyLocked = false;
-	private double bulletVelocity;
-	private boolean isEvading;
-	private Point randPoint;
+	private double bulletVelocity;	
 	private int direction; // TODO: Two direction variables?
 
 	// States
@@ -80,9 +77,6 @@ public class TestBot extends TeamRobot {
 	private MovementStrategy scanningMovement = new StopMovement(); // Used when we're performing 360 scan
 	private MovementStrategy dodgeBullet = new RandomMovement(); // Used to dodge incoming bullet
 	private MovementStrategy victoryDance = new SpinAroundMovement(); // Use for victory dance
-	
-	
-	private double evadeRounds;
 
 	public void run() {
 
@@ -858,59 +852,6 @@ public class TestBot extends TeamRobot {
 		// TODO
 		setState(State.Evading);
 		// runMovementPattern(MovementPattern.Random);
-	}
-
-	/**
-	 * returns a random Point to evade to, which is not inside a wall or
-	 * straight to/away from the enemy
-	 * 
-	 * @return Point point to evade to
-	 */
-
-	private Point randomMovement() {
-		ScannedRobotEvent bot = target.getInfo();
-		double botBearing = bot.getBearing();
-		double heading = getHeading();
-
-		// TODO: change deltaAngle according to the distance to the enemy
-		double deltaAngle = 100;
-
-		Random rand = new Random();
-		Point target = new Point();
-		double randAngle;
-
-		// Random velocity between 5 and 8
-		double velo = 5 + new Random().nextDouble() * 3;
-		setMaxVelocity(velo);
-
-		double turnsTillBulletHits = bot.getDistance() / getBulletVelocity();
-
-		// to stop rand movement when the bullet passed or
-		evadeRounds = turnsTillBulletHits * 2 / 3;
-
-		// distance to move to dodge bullet
-		double dist = turnsTillBulletHits * 2 / 3 * velo;
-
-		// gives a random angle which is not to the enemy or the opposite
-		// direction
-		do {
-			randAngle = rand.nextDouble() * 360;
-			double randAngTotal = (randAngle + heading + botBearing - deltaAngle / 2) % 360;
-			if (randAngTotal < 0) {
-				randAngTotal += 360;
-			}
-			double tx = getX() + dist * Math.sin(Math.toRadians(randAngTotal));
-			double ty = getY() + dist * Math.cos(Math.toRadians(randAngTotal));
-			target.setLocation(tx, ty);
-		} while (randAngle > 0 && randAngle < deltaAngle || randAngle > 180
-				&& randAngle < 180 + deltaAngle || !_fieldRect.contains(target));
-
-		// System.out.println("pos: " + getX() + " " + getY());
-		// System.out.println("ang: " + randAngTotal);
-		// System.out.println("dist: " + dist);
-		// System.out.println("target: " + target);
-
-		return target;
 	}
 
 	/**
