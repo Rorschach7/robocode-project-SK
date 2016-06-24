@@ -1,4 +1,4 @@
-package helper.strategies;
+package helper.strategies.movement;
 
 import robocode.ScannedRobotEvent;
 import robots.BaseBot;
@@ -19,5 +19,9 @@ public abstract class MovementStrategy {
 	public void collectData(BaseBot robot, ScannedRobotEvent e) {
 		
 	}
-
+	
+	@Override
+	public String toString() {		
+		return "Movement Strategy: ";
+	}
 }

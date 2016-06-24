@@ -63,7 +63,7 @@ public class FuncLib {
 	 * Finds the specefied robot among all spotted enemies.	 * 
 	 * @param name
 	 *            The name of the robot that you want.
-	 * @return the Robot if already spotted and existing, null Otherwise.
+	 * @return the Robot if already spotted and existing, otherwise null .
 	 */
 	public static Bot findBotByName(String name, ArrayList<Bot> bots) {
 		for (Bot bot : bots) {

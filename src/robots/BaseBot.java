@@ -3,15 +3,21 @@ package robots;
 import robocode.*;
 import helper.*;
 import helper.Enums.*;
-import helper.strategies.*;
+import helper.strategies.gun.*;
+import helper.strategies.movement.*;
+import helper.strategies.radar.*;
+import helper.strategies.target.ChooseClosestStrategy;
+import helper.strategies.target.TargetStrategy;
+
 import java.awt.Color;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import robocode.util.Utils;
+
 import javafx.geometry.Point2D;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
@@ -27,25 +33,23 @@ public class BaseBot extends TeamRobot {
 	protected double EnergyThreshold = 15;
 	protected boolean scanStarted = false;
 	protected boolean bulletHit;
-	protected boolean hitRobot;
-	protected boolean isEnemyLocked = false;
+	protected boolean hitRobot;	
 	protected double bulletVelocity;	
 	protected int fireDirection; 
 	protected double bulletPower;
 	protected boolean printStatus;
+	protected ArrayList<Bot> enemies = new ArrayList<>();
+	protected ArrayList<Bot> team = new ArrayList<>();
+	protected Bot attacker; // Robot which last attacked us
+	private Bot target;	
 
-	// States
-	protected State state = State.Scanning;	
-	protected RadarState radarState;	
+	// State
+	protected State state = State.Scanning;		
 
 	// Time Handles in rounds
 	protected double scanElapsedTime;
 	protected double scanTimer = 10; // time elapses between scans
 	protected int sweepScanCount = 0;
-	protected ArrayList<Bot> enemies = new ArrayList<>();
-	protected ArrayList<Bot> team = new ArrayList<>();
-	protected Bot attacker = new Bot(); // Robot which last attacked us
-	protected Bot target = new Bot();	
 
 	// Statistics
 	protected ArrayList<Data> dataList = new ArrayList<>();	
@@ -61,6 +65,10 @@ public class BaseBot extends TeamRobot {
 	protected MovementStrategy scanningMovement = new StopMovement(); // Used when we're performing 360 scan
 	protected MovementStrategy dodgeBullet = new RandomMovement(); // Used to dodge incoming bullet
 	protected MovementStrategy victoryDance = new SpinAroundMovement(); // Use for victory dance	
+	// Scanning 
+	protected ScanStrategy scanStrategy = new FullSweepLockStrategy();
+	// Choose target
+	protected TargetStrategy targetStrategy = new ChooseClosestStrategy();
 
 	public void run() {		
 
@@ -90,8 +98,7 @@ public class BaseBot extends TeamRobot {
 			int start = getName().indexOf("(");
 			int end = getName().indexOf(")");
 			nr = Integer.parseInt(getName().substring(start + 1, end));
-		}
-		
+		}		
 		setAdjustGunForRobotTurn(true);
 		setAdjustRadarForRobotTurn(true);
 		setAdjustRadarForGunTurn(true);		
@@ -129,29 +136,19 @@ public class BaseBot extends TeamRobot {
 		// Collect data dependent on strategy
 		dodgeBullet.collectData(this, e);
 		attackingMovement.collectData(this, e);
-		aimStrategy.collectData(this, e);
+		getAimStrategy().collectData(this, e);
 		
-		// System.out.println("Scanned Robot: " + e.getName());
-
-		// Sweep scan found target, lock on
-		if (radarState == RadarState.Sweep
-				&& target.getName().equals(e.getName())) {
-			// System.out.println("Sweep found target, lock on");
-			radarState = RadarState.Lock;
-			isEnemyLocked = true;
-		}
-
-		if (radarState == RadarState.Lock) {
-
-			if (target.getName().equals(e.getName())) {
-				isEnemyLocked = true;
-				runScan(RadarState.Lock);
-			}
-		}	
+		scanStrategy.updateScan(this, e);		
 	}
 
 	public void onHitByBullet(HitByBulletEvent event) {
-		attacker.init(event);		
+		attacker = FuncLib.findBotByName(event.getName(), enemies);
+		if(attacker == null) {
+			attacker = new Bot();
+			attacker.init(event);
+			return;
+		}
+		attacker.init(event);
 	}
 
 	public void onHitRobot(HitRobotEvent event) {
@@ -177,9 +174,9 @@ public class BaseBot extends TeamRobot {
 		}
 
 		// Our target just died, we need a new one
-		if (target.getName().equals(event.getName())) {
-			findTarget();
-			runScan(RadarState.FullScan);
+		if (getTarget().getName().equals(event.getName())) {
+			setState(State.Scanning);
+			//runScan(RadarState.FullScan);			
 		}
 	}
 
@@ -189,7 +186,7 @@ public class BaseBot extends TeamRobot {
 	}
 
 	public void onBulletMissed(BulletMissedEvent event) {
-		FuncLib.findDataByName(target.getName(), dataList).BulletHit(false, aimStrategy);
+		FuncLib.findDataByName(getTarget().getName(), dataList).BulletHit(false, getAimStrategy());
 		misses++;		
 	}
 
@@ -198,7 +195,7 @@ public class BaseBot extends TeamRobot {
 	}
 
 	public void onBulletHit(BulletHitEvent event) {
-		FuncLib.findDataByName(target.getName(), dataList).BulletHit(true, aimStrategy);
+		FuncLib.findDataByName(getTarget().getName(), dataList).BulletHit(true, getAimStrategy());
 		bulletHit = true;
 		hits++;		
 	}
@@ -226,7 +223,7 @@ public class BaseBot extends TeamRobot {
 			victoryDance.execute(this);
 		}
 		
-		System.out.println(aimStrategy + " acc: " + aimStrategy.getAccuracy(this));
+		System.out.println(getAimStrategy() + " acc: " + getAimStrategy().getAccuracy(this));
 
 		gameOver = true;
 
@@ -307,49 +304,28 @@ public class BaseBot extends TeamRobot {
 		if (getState() == State.Attacking) {
 			
 			// Find Target
-			findTarget();
-
-			// Radar Scanning
-			// FullScan finished, start sweep scan
-			if (!scanStarted && radarState == RadarState.FullScan) {
-				System.out.println("Full scan finished.");
-				// Sweep search for our target at last known position
-				runScan(RadarState.Sweep);
-			}
-
-			if (isEnemyLocked) {
-				aimStrategy.execute(this);
-			} else {
-				System.out.println("Enemy no longer locked.");
-				// Use sweep to find target again
-				// do a full scan if target cannot be found after given rounds
-				if (sweepScanCount < 10
-						&& (radarState == RadarState.Lock || radarState == RadarState.Sweep)) {
-					runScan(RadarState.Sweep);
-				} else {
-					runScan(RadarState.FullScan);
-					sweepScanCount = 0;
-				}
-			}
+			target = targetStrategy.execute(this);
 			
+			scanStrategy.attackingScan(this);
 			attackingMovement.execute(this);
 		}
-
+		// In this state we want to perform a full scan of the battlefield
 		if (getState() == State.Scanning) {
 			scanningMovement.execute(this);
-			runScan(RadarState.FullScan);
+			//runScan(RadarState.FullScan);
+			scanStrategy.scanningScan(this);
 		}
 
 		if (getState() == State.Evading) {
 			// Execute avoiding movement strategy	
 			dodgeBullet.execute(this);
-			aimStrategy.execute(this);
+			getAimStrategy().execute(this);
 		}
 
 		if(printStatus) {
 			printStatus();
 		}
-		isEnemyLocked = false;
+		//isEnemyLocked = false;
 	}	
 
 	/**
@@ -358,10 +334,12 @@ public class BaseBot extends TeamRobot {
 	public void printStatus() {
 		System.out
 				.println("---------------------------------------------------------");				
-		System.out.println("Target: " + target.getName());
+		System.out.println("Target: " + getTarget().getName());
 		System.out.println("Attacker: " + attacker.getName());
 		System.out.println("State: " + getState());
-		System.out.println("RadarState: " + radarState);
+		System.out.println(scanStrategy);
+		System.out.println(aimStrategy);		
+		System.out.println("Dodge Strategy: " + dodgeBullet);
 		System.out
 				.println("---------------------------------------------------------");
 	}
@@ -375,9 +353,9 @@ public class BaseBot extends TeamRobot {
 
 	public void update(ScannedRobotEvent robot) {
 		// Scan energy
-		if (!(target.getName().equals("None"))
-				&& target.getName().equals(robot.getName())) {
-			double enemyDeltaEnergy = target.getInfo().getEnergy()
+		if (getTarget() != null
+				&& getTarget().getName().equals(robot.getName())) {
+			double enemyDeltaEnergy = getTarget().getInfo().getEnergy()
 					- robot.getEnergy();
 			setBulletPower(enemyDeltaEnergy);
 			if (enemyDeltaEnergy > 0) {
@@ -479,137 +457,13 @@ public class BaseBot extends TeamRobot {
 		}
 
 		// Check if enemy hit a wall
-		double wallDmg = target.getInfo().getVelocity() * 0.5 - 1;
+		double wallDmg = getTarget().getInfo().getVelocity() * 0.5 - 1;
 		if (deltaEnergy == wallDmg) {
 			return;
 		}		
 
 		setBulletVelocity(20 - 3 * deltaEnergy);		
 		setState(State.Evading);		
-	}
-
-	/**
-	 * Finds a target among all spotted enemies
-	 */
-	private void findTarget() {
-
-		if (enemies == null) {
-			return;
-		}
-
-		for (int i = 0; i < enemies.size(); i++) {
-			if (!enemies.get(i).isDead()) {
-				target = enemies.get(i);
-				break;
-			}
-		}
-
-		// Find closest enemy
-		for (int i = 0; i < enemies.size(); i++) {
-			if (enemies.get(i).isDead()) {
-				continue;
-			}
-			if (target.getInfo().getDistance() > enemies.get(i).getInfo()
-					.getDistance()) {
-				target = enemies.get(i);
-			}
-		}
-	}
-
-	private void runsScan(RadarState scan) {
-
-		// System.out.println("RunScan: " + scan);
-
-		if (scan == RadarState.FullScan) {
-			if (!scanStarted) {
-				// make a short scan of the whole battlefield
-				radarState = RadarState.FullScan;
-				// System.out.println("Executing Scan");
-				setTurnRadarRight(360);
-				scanStarted = true;
-			} else if (getRadarTurnRemaining() < 10) {
-				// Scan finished
-				scanStarted = false;
-				setState(State.Attacking);
-			}
-		}
-
-		if (scan == RadarState.Sweep) {
-
-			radarState = RadarState.Sweep;
-			sweepScanCount++;
-			// Absolute angle towards target
-			double angleToEnemy = getHeadingRadians()
-					+ target.getInfo().getBearingRadians();
-
-			// Subtract current radar heading to get the turn required to face
-			// the enemy, be sure it is normalized
-			double radarTurn = Utils.normalRelativeAngle(angleToEnemy
-					- getRadarHeadingRadians());
-
-			// Distance we want to scan from middle of enemy to either side
-			// The 36.0 is how many units from the center of the enemy robot it
-			// scans.
-			double extraTurn = Math.min(
-					Math.atan(36.0 / target.getInfo().getDistance()),
-					Rules.RADAR_TURN_RATE_RADIANS);
-
-			// Adjust the radar turn so it goes that much further in the
-			// direction it is going to turn
-			// Basically if we were going to turn it left, turn it even more
-			// left, if right, turn more right.
-			// This allows us to overshoot our enemy so that we get a good sweep
-			// that will not slip.
-			radarTurn += (radarTurn < 0 ? -extraTurn : extraTurn);
-
-			// Turn the radar
-			setTurnRadarRightRadians(radarTurn);
-
-		}
-
-		if (scan == RadarState.Lock) {
-
-			radarState = RadarState.Lock;
-
-			if (target.getName().equals("None")) {
-				System.out.println("No Target assigned.");
-				return;
-			}
-
-			// double angleToEnemy = getHeading() +
-			// target.getInfo().getBearing();
-			//
-			// double radarTurn = Utils.normalRelativeAngleDegrees(angleToEnemy
-			// - getRadarHeading());
-			//
-			// setTurnRadarRight(radarTurn);
-
-			double angleToEnemy = getHeadingRadians()
-					+ target.getInfo().getBearingRadians();
-
-			// Subtract current radar heading to get the turn required to face
-			// the enemy, be sure it is normalized
-			double radarTurn = Utils.normalRelativeAngle(angleToEnemy
-					- getRadarHeadingRadians());
-
-			// Distance we want to scan from middle of enemy to either side
-			// The 36.0 is how many units from the center of the enemy robot it
-			// scans.
-			double extraTurn = Math.min(
-					Math.atan(20.0 / target.getInfo().getDistance()),
-					Rules.RADAR_TURN_RATE_RADIANS);
-
-			// Adjust the radar turn so it goes that much further in the
-			// direction it is going to turn
-			// Basically if we were going to turn it left, turn it even more
-			// left, if right, turn more right.
-			// This allows us to overshoot our enemy so that we get a good sweep
-			// that will not slip.
-			radarTurn += (radarTurn < 0 ? -extraTurn : extraTurn);
-
-			// Turn the radar
-			setTurnRadarRightRadians(radarTurn);
-		}
 	}
 	
 	/**
@@ -689,12 +543,12 @@ public class BaseBot extends TeamRobot {
 
 	public boolean checkFriendlyFire() {
 		double absBearing = getHeadingRadians()
-				+ target.getInfo().getBearingRadians();
+				+ getTarget().getInfo().getBearingRadians();
 		// find our enemy's location:
 		double ex = getX() + Math.sin(absBearing)
-				* target.getInfo().getDistance();
+				* getTarget().getInfo().getDistance();
 		double ey = getY() + Math.cos(absBearing)
-				* target.getInfo().getDistance();
+				* getTarget().getInfo().getDistance();
 
 		Point2D enemy = new Point2D(ex, ey);
 		Point2D self = new Point2D(getX(), getY());
@@ -809,5 +663,17 @@ public class BaseBot extends TeamRobot {
 
 	public void setMoveDirection(int moveDirection) {
 		this.moveDirection = moveDirection;
+	}
+
+	public GunStrategy getAimStrategy() {
+		return aimStrategy;
+	}
+
+	public void setAimStrategy(GunStrategy aimStrategy) {
+		this.aimStrategy = aimStrategy;
+	}
+
+	public void setTarget(Bot target) {
+		this.target = target;
 	}
 }

@@ -1,6 +1,7 @@
-package helper.strategies;
+package helper.strategies.movement;
 
 import helper.Enums.State;
+
 import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.Rectangle;

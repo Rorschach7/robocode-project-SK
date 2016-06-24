@@ -1,8 +1,9 @@
-package helper.strategies;
+package helper.strategies.movement;
 
 import java.awt.Point;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
+
 import helper.Bot;
 import helper.EnemyWave;
 import helper.FuncLib;

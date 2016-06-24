@@ -1,4 +1,4 @@
-package helper.strategies;
+package helper.strategies.gun;
 
 import java.util.ArrayList;
 import java.util.List;
