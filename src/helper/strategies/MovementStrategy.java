@@ -5,6 +5,10 @@ import robots.BaseBot;
 
 public abstract class MovementStrategy {
 	
+	/**
+	 * Override this function with your specific movement code
+	 * @param robot
+	 */
 	public abstract void execute(BaseBot robot);
 	
 	/**

@@ -35,8 +35,8 @@ public class BaseBot extends TeamRobot {
 	protected boolean printStatus;
 
 	// States
-	private State state = State.Scanning;	
-	private RadarState radarState;	
+	protected State state = State.Scanning;	
+	protected RadarState radarState;	
 
 	// Time Handles in rounds
 	protected double scanElapsedTime;
@@ -94,8 +94,7 @@ public class BaseBot extends TeamRobot {
 		
 		setAdjustGunForRobotTurn(true);
 		setAdjustRadarForRobotTurn(true);
-		setAdjustRadarForGunTurn(true);
-		
+		setAdjustRadarForGunTurn(true);		
 	}
 
 	/** Move in the direction of an x and y coordinate **/
@@ -152,11 +151,7 @@ public class BaseBot extends TeamRobot {
 	}
 
 	public void onHitByBullet(HitByBulletEvent event) {
-		attacker.init(event);
-
-		if (getEnergy() <= EnergyThreshold) {
-			setState(State.Evading);
-		}
+		attacker.init(event);		
 	}
 
 	public void onHitRobot(HitRobotEvent event) {
@@ -164,7 +159,6 @@ public class BaseBot extends TeamRobot {
 	}
 
 	public void onRobotDeath(RobotDeathEvent event) {
-
 		for (Bot bot : team) {
 			if (event.getName().equals(bot.getName())) {
 				bot.died();
@@ -214,7 +208,7 @@ public class BaseBot extends TeamRobot {
 			data.lost();
 		}
 		System.out.println("DEFEAT");
-
+		
 		if (getTeammates() == null) {
 			saveData();
 			return;
@@ -231,11 +225,6 @@ public class BaseBot extends TeamRobot {
 			System.out.println("VICTORY");
 			victoryDance.execute(this);
 		}
-
-		// Debug
-		// for (Data data : dataList) {
-		// data.printData(true);
-		// }
 		
 		System.out.println(aimStrategy + " acc: " + aimStrategy.getAccuracy(this));
 
@@ -361,7 +350,6 @@ public class BaseBot extends TeamRobot {
 			printStatus();
 		}
 		isEnemyLocked = false;
-
 	}	
 
 	/**
@@ -414,9 +402,8 @@ public class BaseBot extends TeamRobot {
 
 		} else {
 			// Enemy
-			// Update an enemie
+			// Update an enemy
 			if (enemies != null) {
-
 				for (Bot bot : enemies) {
 					if (bot.getName().equals(robot.getName())) {
 						bot.init(robot);
@@ -451,7 +438,7 @@ public class BaseBot extends TeamRobot {
 				}
 			}
 
-			// Create data object, that we cann add to our list
+			// Create data object, that we can add to our list
 			Data data;
 
 			if (checkForData(robotName)) {
@@ -529,7 +516,7 @@ public class BaseBot extends TeamRobot {
 		}
 	}
 
-	private void runScan(RadarState scan) {
+	private void runsScan(RadarState scan) {
 
 		// System.out.println("RunScan: " + scan);
 
@@ -624,26 +611,7 @@ public class BaseBot extends TeamRobot {
 			setTurnRadarRightRadians(radarTurn);
 		}
 	}
-
-//	private void collectGuessData(ScannedRobotEvent e) {
-//
-//		// Collect data
-//		double absBearing = getHeadingRadians() + e.getBearingRadians();
-//
-//		// find our enemy's location:
-//		double ex = getX() + Math.sin(absBearing) * e.getDistance();
-//		double ey = getY() + Math.cos(absBearing) * e.getDistance();
-//
-//		// Let's process the waves now:
-//		for (int i = 0; i < getWaves().size(); i++) {
-//			WaveBullet currentWave = (WaveBullet) getWaves().get(i);
-//			if (currentWave.checkHit(ex, ey, getTime())) {
-//				getWaves().remove(currentWave);
-//				i--;
-//			}
-//		}
-//	}
-
+	
 	/**
 	 * Tries to load the data file with the specified name, return the object if
 	 * found or null if not.
