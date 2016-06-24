@@ -7,7 +7,7 @@ import java.awt.Rectangle;
 import java.util.Random;
 
 import robocode.ScannedRobotEvent;
-import robots.TestBot;
+import robots.BaseBot;
 
 public class RandomMovement extends MovementStrategy {
 	
@@ -16,7 +16,7 @@ public class RandomMovement extends MovementStrategy {
 	private double evadeRounds;
 	
 	@Override
-	public void execute(TestBot robot) {		
+	public void execute(BaseBot robot) {		
 		if (isEvading) {
 			System.out.println("evading");
 			robot.goTo(randPoint.getX(), randPoint.getY());
@@ -40,7 +40,7 @@ public class RandomMovement extends MovementStrategy {
 	 * @param robot
 	 * @return
 	 */
-	private Point calculateRandomPoint(TestBot robot) {
+	private Point calculateRandomPoint(BaseBot robot) {
 		ScannedRobotEvent bot = robot.getTarget().getInfo();
 		double botBearing = bot.getBearing();
 		double heading = robot.getHeading();

@@ -1,11 +1,11 @@
 package helper.strategies;
 
-import robots.TestBot;
+import robots.BaseBot;
 
 public class SpinAroundMovement extends MovementStrategy {
 
 	@Override
-	public void execute(TestBot robot) {
+	public void execute(BaseBot robot) {
 		robot.setMaxVelocity(0);
 		robot.setTurnRight(3600);
 	}

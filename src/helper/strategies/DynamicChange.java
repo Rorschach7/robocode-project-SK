@@ -2,7 +2,7 @@ package helper.strategies;
 
 import helper.Data;
 import helper.FuncLib;
-import robots.TestBot;
+import robots.BaseBot;
 
 public class DynamicChange extends GunStrategy {
 	
@@ -20,7 +20,7 @@ public class DynamicChange extends GunStrategy {
 	private int interval = 10;
 	
 	@Override
-	public boolean execute(TestBot robot) {
+	public boolean execute(BaseBot robot) {
 		boolean fired;
 		// Check if we have reliable data about our target
 		Data data = FuncLib.findDataByName(robot.getTarget().getName(), robot.getDataList());
@@ -64,7 +64,7 @@ public class DynamicChange extends GunStrategy {
 	}
 	
 	@Override
-	public double getAccuracy(TestBot robot) {		
+	public double getAccuracy(BaseBot robot) {		
 		return acc;
 	}
 	

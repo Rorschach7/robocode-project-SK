@@ -1,9 +1,9 @@
 package helper.strategies;
 
-import robots.TestBot;
+import robots.BaseBot;
 
 public abstract class MovementStrategy {
 	
-	public abstract void execute(TestBot robot);
+	public abstract void execute(BaseBot robot);
 
 }

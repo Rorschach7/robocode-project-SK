@@ -4,92 +4,99 @@ import robocode.*;
 import helper.*;
 import helper.Enums.*;
 import helper.strategies.*;
-
 import java.awt.Color;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
-
 import robocode.util.Utils;
 import javafx.geometry.Point2D;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
-public class TestBot extends TeamRobot {
+public class BaseBot extends TeamRobot {
 
 	public static boolean periodicScan = false;
 
 	// Variables
-	private int nr; // number to identify in team
-	private boolean gameOver = false;
-	private int moveDirection = 1;// >0 : turn right, <0 : tun left	
-	private double EnergyThreshold = 15;
-	private boolean scanStarted = false;
-	private boolean bulletHit;
-	private boolean hitRobot;
-	private boolean isEnemyLocked = false;
-	private double bulletVelocity;	
-	private int fireDirection; 
-	private double bulletPower;
+	protected int nr; // number to identify in team
+	protected boolean gameOver = false;
+	protected int moveDirection = 1;// >0 : turn right, <0 : tun left	
+	protected double EnergyThreshold = 15;
+	protected boolean scanStarted = false;
+	protected boolean bulletHit;
+	protected boolean hitRobot;
+	protected boolean isEnemyLocked = false;
+	protected double bulletVelocity;	
+	protected int fireDirection; 
+	protected double bulletPower;
+	protected boolean printStatus;
 
 	// States
 	private State state = State.Scanning;	
 	private RadarState radarState;	
 
 	// Time Handles in rounds
-	private double scanElapsedTime;
-	private double scanTimer = 10; // time elapses between scans
-	private int sweepScanCount = 0;
-	private ArrayList<Bot> enemies = new ArrayList<>();
-	private ArrayList<Bot> team = new ArrayList<>();
-	private Bot attacker = new Bot(); // Robot which last attacked us
-	private Bot target = new Bot();	
+	protected double scanElapsedTime;
+	protected double scanTimer = 10; // time elapses between scans
+	protected int sweepScanCount = 0;
+	protected ArrayList<Bot> enemies = new ArrayList<>();
+	protected ArrayList<Bot> team = new ArrayList<>();
+	protected Bot attacker = new Bot(); // Robot which last attacked us
+	protected Bot target = new Bot();	
 
 	// Statistics
-	ArrayList<Data> dataList = new ArrayList<>();	
-	private boolean bestScore = true;
-	private double hits;
-	private double misses;
+	protected ArrayList<Data> dataList = new ArrayList<>();	
+	protected boolean bestScore = true;
+	protected double hits;
+	protected double misses;
 
 	// Strategies
 	// Targeting
-	private GunStrategy aimStrategy = new DynamicChange();
+	protected GunStrategy aimStrategy = new DynamicChange();
 	// Movement
-	private MovementStrategy attackingMovement = new StopMovement(); // Used most of the time
-	private MovementStrategy scanningMovement = new StopMovement(); // Used when we're performing 360 scan
-	private MovementStrategy dodgeBullet = new RandomMovement(); // Used to dodge incoming bullet
-	private MovementStrategy victoryDance = new SpinAroundMovement(); // Use for victory dance	
+	protected MovementStrategy attackingMovement = new StopMovement(); // Used most of the time
+	protected MovementStrategy scanningMovement = new StopMovement(); // Used when we're performing 360 scan
+	protected MovementStrategy dodgeBullet = new RandomMovement(); // Used to dodge incoming bullet
+	protected MovementStrategy victoryDance = new SpinAroundMovement(); // Use for victory dance	
 
-	public void run() {
-
-		// Assign number
-		if (getTeammates() != null) {
-			int start = getName().indexOf("(");
-			int end = getName().indexOf(")");
-			nr = Integer.parseInt(getName().substring(start + 1, end));
-		}
+	public void run() {		
 
 		// Color
 		setBodyColor(Color.gray);
 		setGunColor(Color.blue);
 		setRadarColor(Color.blue);
 		setBulletColor(Color.green);
-
-		setAdjustGunForRobotTurn(true);
-		setAdjustRadarForRobotTurn(true);
-		setAdjustRadarForGunTurn(true);
+		
+		initialize();
 		
 		setState(State.Scanning);
 
 		while (true) {
 			scan();
 		}
-	}	
+	}
+	
+	/**
+	 * This method is called in the run method of robocode.
+	 * Use/Override this method to initialize robot with certain strategies or set its colors.
+	 * Always use super call first.
+	 */
+	public void initialize() {
+		// Assign number
+		if (getTeammates() != null) {
+			int start = getName().indexOf("(");
+			int end = getName().indexOf(")");
+			nr = Integer.parseInt(getName().substring(start + 1, end));
+		}
+		
+		setAdjustGunForRobotTurn(true);
+		setAdjustRadarForRobotTurn(true);
+		setAdjustRadarForGunTurn(true);
+		
+	}
 
 	/** Move in the direction of an x and y coordinate **/
 	public void goTo(double x, double y) {
@@ -359,7 +366,9 @@ public class TestBot extends TeamRobot {
 			aimStrategy.execute(this);
 		}
 
-		// printStatus();
+		if(printStatus) {
+			printStatus();
+		}
 		isEnemyLocked = false;
 
 	}	

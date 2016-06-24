@@ -9,12 +9,12 @@ import helper.FuncLib;
 import robocode.AdvancedRobot;
 import robocode.ScannedRobotEvent;
 import robocode.util.Utils;
-import robots.TestBot;
+import robots.BaseBot;
 
 public class WaveSurfing extends MovementStrategy{
 	private ArrayList<Bot> enemies = new ArrayList<>();
 	public Point _myLocation; // our bot's location
-	TestBot robot;
+	BaseBot robot;
 	public static int BINS = 47;
 	public static double _surfStats[] = new double[BINS]; // we'll use 47 bins
 	public ArrayList<Integer> _surfDirections = new ArrayList<>();
@@ -24,7 +24,7 @@ public class WaveSurfing extends MovementStrategy{
 	private int moveDirection;
 
 	@Override
-	public void execute(TestBot robot) {
+	public void execute(BaseBot robot) {
 		this.robot = robot;
 		enemies = robot.getEnemies();
 		_myLocation = new Point((int)robot.getX(), (int)robot.getY());
@@ -193,7 +193,7 @@ public class WaveSurfing extends MovementStrategy{
 				BINS - 1);
 	}
 	
-	public void collectWaveSurfData(TestBot robot, ScannedRobotEvent event) {
+	public void collectWaveSurfData(BaseBot robot, ScannedRobotEvent event) {
 		if(robot.getTarget().getInfo() == null) {
 			return;
 		}
@@ -234,7 +234,7 @@ public class WaveSurfing extends MovementStrategy{
 		updateWaves(robot);
 	}
 	
-	public void updateWaves(TestBot robot) {
+	public void updateWaves(BaseBot robot) {
 		for (Bot enemy : enemies) {
 			for (int x = 0; x < enemy.getBulletWave().size(); x++) {
 				EnemyWave ew = (EnemyWave) enemy.getBulletWave().get(x);

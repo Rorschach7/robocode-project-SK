@@ -8,14 +8,14 @@ import helper.FuncLib;
 import helper.WaveBullet;
 import robocode.ScannedRobotEvent;
 import robocode.util.Utils;
-import robots.TestBot;
+import robots.BaseBot;
 
 public class GuessTargeting extends GunStrategy {
 	
 	private List<WaveBullet> waves = new ArrayList<WaveBullet>();
 
 	@Override
-	public boolean execute(TestBot robot) {
+	public boolean execute(BaseBot robot) {
 		ScannedRobotEvent enemy = robot.getTarget().getInfo();
 
 		// Guess Targeting
@@ -59,7 +59,7 @@ public class GuessTargeting extends GunStrategy {
 		return false;
 	}
 	
-	public void collectGuessData(TestBot robot, ScannedRobotEvent e) {
+	public void collectGuessData(BaseBot robot, ScannedRobotEvent e) {
 
 		// Collect data
 		double absBearing = robot.getHeadingRadians() + e.getBearingRadians();

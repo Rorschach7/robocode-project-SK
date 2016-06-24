@@ -6,7 +6,7 @@ import helper.GravPoint;
 
 import java.util.ArrayList;
 
-import robots.TestBot;
+import robots.BaseBot;
 
 public class AntiGravity extends MovementStrategy {
 	
@@ -15,7 +15,7 @@ public class AntiGravity extends MovementStrategy {
 	
 
 	@Override
-	public void execute(TestBot robot) {
+	public void execute(BaseBot robot) {
 
 		double xforce = 0;
 		double yforce = 0;

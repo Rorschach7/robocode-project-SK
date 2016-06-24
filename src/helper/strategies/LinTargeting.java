@@ -3,12 +3,12 @@ package helper.strategies;
 import helper.FuncLib;
 import robocode.Rules;
 import robocode.ScannedRobotEvent;
-import robots.TestBot;
+import robots.BaseBot;
 
 public class LinTargeting extends GunStrategy {
 
 	@Override
-	public boolean execute(TestBot robot) {
+	public boolean execute(BaseBot robot) {
 		ScannedRobotEvent enemy = robot.getTarget().getInfo();		
 		
 		double power = Math.min(3,
