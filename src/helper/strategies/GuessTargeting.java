@@ -59,8 +59,8 @@ public class GuessTargeting extends GunStrategy {
 		return false;
 	}
 	
-	public void collectGuessData(BaseBot robot, ScannedRobotEvent e) {
-
+	@Override
+	public void collectData(BaseBot robot, ScannedRobotEvent e) {
 		// Collect data
 		double absBearing = robot.getHeadingRadians() + e.getBearingRadians();
 
@@ -77,6 +77,7 @@ public class GuessTargeting extends GunStrategy {
 			}
 		}
 	}
+	
 	
 	public String toString(){
 		return "Guess Factor Targeting";		

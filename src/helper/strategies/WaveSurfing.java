@@ -193,7 +193,8 @@ public class WaveSurfing extends MovementStrategy{
 				BINS - 1);
 	}
 	
-	public void collectWaveSurfData(BaseBot robot, ScannedRobotEvent event) {
+	@Override
+	public void collectData(BaseBot robot, ScannedRobotEvent e) {
 		if(robot.getTarget().getInfo() == null) {
 			return;
 		}

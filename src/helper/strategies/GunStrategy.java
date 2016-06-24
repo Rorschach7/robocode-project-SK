@@ -1,5 +1,6 @@
 package helper.strategies;
 
+import robocode.ScannedRobotEvent;
 import robots.BaseBot;
 
 public abstract class GunStrategy {
@@ -14,6 +15,15 @@ public abstract class GunStrategy {
 	public double getAccuracy(BaseBot robot) {
 		double acc = robot.getHits() / (robot.getHits() + robot.getMisses()) * 100.0;
 		return acc;
+	}
+	
+	/**
+	 * This function will be called in the robot's onScannedRobotEvent method. 
+	 * @param robot
+	 * @param e
+	 */
+	public void collectData(BaseBot robot, ScannedRobotEvent e) {
+		
 	}
 
 }

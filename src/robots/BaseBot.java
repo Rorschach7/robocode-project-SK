@@ -128,18 +128,9 @@ public class BaseBot extends TeamRobot {
 	public void onScannedRobot(ScannedRobotEvent e) {
 		update(e);
 		// Collect data dependent on strategy
-		if(dodgeBullet instanceof WaveSurfing) {
-			((WaveSurfing) dodgeBullet).collectWaveSurfData(this, e); 
-		}
-		if(attackingMovement instanceof WaveSurfing) {
-			((WaveSurfing) attackingMovement).collectWaveSurfData(this, e); 
-		}
-		if(aimStrategy instanceof GuessTargeting) {
-			((GuessTargeting) aimStrategy).collectGuessData(this, e);			
-		}		
-		if(aimStrategy instanceof DynamicChange) {
-			((DynamicChange) aimStrategy).getGuessTargeting().collectGuessData(this, e);	
-		}
+		dodgeBullet.collectData(this, e);
+		attackingMovement.collectData(this, e);
+		aimStrategy.collectData(this, e);
 		
 		// System.out.println("Scanned Robot: " + e.getName());
 
