@@ -3,7 +3,7 @@ package helper.strategies.radar;
 import robocode.ScannedRobotEvent;
 import robots.BaseBot;
 
-public class FullSweepLockStrategy extends ScanStrategy {
+public class FullSweepLockStrategy extends RadarStrategy {
 	
 	enum RadarState {
 		Lock, Sweep, FullScan
@@ -21,11 +21,11 @@ public class FullSweepLockStrategy extends ScanStrategy {
 
 
 	@Override
-	public boolean attackingScan(BaseBot robot) {
+	public void attackingScan(BaseBot robot) {
 		// Radar Scanning
 		// FullScan finished, start sweep scan
-		if (!fullScan.attackingScan(robot) && radarState == RadarState.FullScan) {
-			//System.out.println("Full scan finished.");
+		if (!fullScan.execute(robot) && radarState == RadarState.FullScan) {
+			System.out.println("Full scan finished.");
 			// Sweep search for our target at last known position
 			sweepScan.attackingScan(robot);
 			radarState = RadarState.Sweep;
@@ -37,16 +37,18 @@ public class FullSweepLockStrategy extends ScanStrategy {
 			System.out.println("Enemy no longer locked.");
 			// Use sweep to find target again
 			// do a full scan if target cannot be found after given rounds
-			if (sweepScanCount < 10
-					&& (radarState == RadarState.Lock || radarState == RadarState.Sweep)) {
-				sweepScan.attackingScan(robot);
+			if (sweepScanCount < 10 && (radarState == RadarState.Lock || radarState == RadarState.Sweep)) {
+				sweepScan.execute(robot);
+				radarState = RadarState.Sweep;
 			} else {
-				fullScan.attackingScan(robot);
+				fullScan.execute(robot);
 				radarState = RadarState.FullScan;
 				sweepScanCount = 0;
 			}
-		}	
-		return false;
+		}
+		// Reset isEnemyLocked
+		isEnemyLocked = false;
+		
 	}
 
 	@Override
@@ -56,7 +58,7 @@ public class FullSweepLockStrategy extends ScanStrategy {
 	}
 	
 	@Override
-	public void updateScan(BaseBot robot, ScannedRobotEvent e) {
+	public boolean execute(BaseBot robot, ScannedRobotEvent e) {
 		// Sweep scan found target, lock on
 		if (radarState == RadarState.Sweep
 				&& robot.getTarget().getName().equals(e.getName())) {
@@ -68,14 +70,14 @@ public class FullSweepLockStrategy extends ScanStrategy {
 		if (radarState == RadarState.Lock) {
 			if (robot.getTarget().getName().equals(e.getName())) {
 				isEnemyLocked = true;
-				lockScan.attackingScan(robot);
+				lockScan.execute(robot);
 			}
-		}	
+		}		
+		return false;
 	}
 	
 	@Override
-	public String toString() {
-		// TODO Auto-generated method stub
+	public String toString() {		
 		return super.toString() + "Full Sweep Lock";
 	}
 }

@@ -4,7 +4,24 @@ import helper.Enums.State;
 import robocode.ScannedRobotEvent;
 import robots.BaseBot;
 
-public abstract class ScanStrategy {
+public abstract class RadarStrategy {
+	
+	/**
+	 * This function is called in the onScannedRobotEvent method.
+	 * Can be used to keep track of robots.
+	 * Most scanning strategies only need that much.
+	 * @param robot
+	 */
+	public abstract boolean execute(BaseBot robot, ScannedRobotEvent e);
+	
+	/**
+	 * 
+	 * @param robot
+	 * @return
+	 */
+	public boolean execute(BaseBot robot) {
+		return false;
+	}
 	
 	/**
 	 * Override this function with your specific scan code. 
@@ -13,7 +30,9 @@ public abstract class ScanStrategy {
 	 * @param robot
 	 * @return returns true if scan is completed, otherwise false.
 	 */
-	public abstract boolean attackingScan(BaseBot robot);
+	public void attackingScan(BaseBot robot) {
+		
+	}
 	
 	/**
 	 * The BaseBot calls this function at the start of each match. 
@@ -25,14 +44,6 @@ public abstract class ScanStrategy {
 		robot.setState(State.Attacking);
 	}
 	
-	/**
-	 * This function is called in the onScannedRobotEvent method.
-	 * Can be used to keep track of robots.
-	 * @param robot
-	 */
-	public void updateScan(BaseBot robot, ScannedRobotEvent e) {
-		
-	}
 	
 	@Override
 	public String toString() {

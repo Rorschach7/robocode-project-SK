@@ -66,7 +66,7 @@ public class BaseBot extends TeamRobot {
 	protected MovementStrategy dodgeBullet = new RandomMovement(); // Used to dodge incoming bullet
 	protected MovementStrategy victoryDance = new SpinAroundMovement(); // Use for victory dance	
 	// Scanning 
-	protected ScanStrategy scanStrategy = new FullSweepLockStrategy();
+	protected RadarStrategy scanStrategy = new FullSweepLockStrategy();
 	// Choose target
 	protected TargetStrategy targetStrategy = new ChooseClosestStrategy();
 
@@ -138,7 +138,7 @@ public class BaseBot extends TeamRobot {
 		attackingMovement.collectData(this, e);
 		getAimStrategy().collectData(this, e);
 		
-		scanStrategy.updateScan(this, e);		
+		scanStrategy.execute(this, e);		
 	}
 
 	public void onHitByBullet(HitByBulletEvent event) {

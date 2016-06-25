@@ -5,12 +5,17 @@ import robocode.ScannedRobotEvent;
 import robocode.util.Utils;
 import robots.BaseBot;
 
-public class LockScanStrategy extends ScanStrategy {
+public class LockScanStrategy extends RadarStrategy {
 	
 	protected double lockAngle = 20.0;
-
+	
 	@Override
-	public boolean attackingScan(BaseBot robot) {
+	public boolean execute(BaseBot robot, ScannedRobotEvent e) {
+		return execute(robot);	
+	}
+	
+	@Override
+	public boolean execute(BaseBot robot) {
 		ScannedRobotEvent target = robot.getTarget().getInfo();
 		if(target == null) {
 			return false;
@@ -33,7 +38,7 @@ public class LockScanStrategy extends ScanStrategy {
 		// Distance we want to scan from middle of enemy to either side
 		// The 36.0 is how many units from the center of the enemy robot it
 		// scans.
-		double extraTurn = Math.min(Math.atan(20.0 / target.getDistance()), Rules.RADAR_TURN_RATE_RADIANS);
+		double extraTurn = Math.min(Math.atan(lockAngle / target.getDistance()), Rules.RADAR_TURN_RATE_RADIANS);
 
 		// Adjust the radar turn so it goes that much further in the
 		// direction it is going to turn
@@ -45,7 +50,7 @@ public class LockScanStrategy extends ScanStrategy {
 
 		// Turn the radar
 		robot.setTurnRadarRightRadians(radarTurn);
-		return false;
+		return true;
 	}
 	
 	/**

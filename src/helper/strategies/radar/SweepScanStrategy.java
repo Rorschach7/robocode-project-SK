@@ -5,12 +5,17 @@ import robocode.ScannedRobotEvent;
 import robocode.util.Utils;
 import robots.BaseBot;
 
-public class SweepScanStrategy extends ScanStrategy {
+public class SweepScanStrategy extends RadarStrategy {
 	
 	protected double sweepAngle = 36;
-
+	
 	@Override
-	public boolean attackingScan(BaseBot robot) {
+	public boolean execute(BaseBot robot, ScannedRobotEvent e) {
+		return execute(robot);
+	}
+	
+	@Override
+	public boolean execute(BaseBot robot) {
 		ScannedRobotEvent target = robot.getTarget().getInfo();
 		if(target == null) {
 			return false;
@@ -41,6 +46,11 @@ public class SweepScanStrategy extends ScanStrategy {
 		// Turn the radar
 		robot.setTurnRadarRightRadians(radarTurn);
 		return true;
+	}
+
+	@Override
+	public void attackingScan(BaseBot robot) {
+			
 	}
 	
 	public void setSweepAngle(double sweepAngle) {
