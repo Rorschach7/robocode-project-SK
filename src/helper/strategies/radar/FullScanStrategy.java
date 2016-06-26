@@ -28,12 +28,12 @@ public class FullScanStrategy extends RadarStrategy {
 	 * The scan code for this strategy doesn't need the ScannedRobotEvent.
 	 * With this function we can call the code without the event as parameter.
 	 * @param robot
-	 * @return
+	 * @return returns true when scan finished.
 	 */
 	public boolean execute(BaseBot robot) {
 		if (!scanning) {
 			// make a short scan of the whole battlefield			
-			// System.out.println("Executing Scan");
+			System.out.println("Executing Scan");
 			robot.setTurnRadarRight(360);
 			scanning = true;
 			return false;

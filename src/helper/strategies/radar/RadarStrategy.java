@@ -24,6 +24,14 @@ public abstract class RadarStrategy {
 	}
 	
 	/**
+	 * This function is called every turn, no matter the state.	 * 
+	 * @param robot
+	 */
+	public void periodicScan(BaseBot robot) {
+		
+	}
+	
+	/**
 	 * Override this function with your specific scan code. 
 	 * The BaseBot calls this function every round, if it is in its attacking state.
 	 * If you intend to use different scanning methods, this is where you manage them.

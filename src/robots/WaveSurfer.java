@@ -3,7 +3,6 @@ package robots;
 import robocode.*;
 import robocode.util.Utils;
 import java.awt.geom.*;     // for Point2D's
-import java.lang.*;         // for Double and Integer objects
 import java.util.ArrayList; // for collection of waves
 public class WaveSurfer extends AdvancedRobot {
 	 public static int BINS = 47;
@@ -11,9 +10,9 @@ public class WaveSurfer extends AdvancedRobot {
 	    public Point2D.Double _myLocation;     // our bot's location
 	    public Point2D.Double _enemyLocation;  // enemy bot's location
 	 
-	    public ArrayList _enemyWaves;
-	    public ArrayList _surfDirections;
-	    public ArrayList _surfAbsBearings;
+	    public ArrayList<EnemyWave> _enemyWaves;
+	    public ArrayList<Integer> _surfDirections;
+	    public ArrayList<Double> _surfAbsBearings;
 	 
 	    // We must keep track of the enemy's energy level to detect EnergyDrop,
 	    // indicating a bullet is fired
@@ -29,9 +28,9 @@ public class WaveSurfer extends AdvancedRobot {
 	    public static double WALL_STICK = 160;
 	 
 	    public void run() {
-	        _enemyWaves = new ArrayList();
-	        _surfDirections = new ArrayList();
-	        _surfAbsBearings = new ArrayList();
+	        _enemyWaves = new ArrayList<EnemyWave>();
+	        _surfDirections = new ArrayList<Integer>();
+	        _surfAbsBearings = new ArrayList<Double>();
 	 
 	        setAdjustGunForRobotTurn(true);
 	        setAdjustRadarForGunTurn(true);
@@ -245,7 +244,7 @@ public class WaveSurfer extends AdvancedRobot {
 	    }
 	 
 	    // This can be defined as an inner class if you want.
-	    private class EnemyWave {
+	    public class EnemyWave {
 	        Point2D.Double fireLocation;
 	        long fireTime;
 	        double bulletVelocity, directAngle, distanceTraveled;

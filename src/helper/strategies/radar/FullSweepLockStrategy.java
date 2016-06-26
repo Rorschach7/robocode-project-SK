@@ -14,6 +14,10 @@ public class FullSweepLockStrategy extends RadarStrategy {
 	private RadarState radarState;
 	private int sweepScanCount;
 	
+	// Periodic scan
+	private int interval = 30;
+	private int count = 0;
+	
 	// Scanning Strategies
 	private FullScanStrategy fullScan = new FullScanStrategy();
 	private SweepScanStrategy sweepScan = new SweepScanStrategy();
@@ -21,10 +25,10 @@ public class FullSweepLockStrategy extends RadarStrategy {
 
 
 	@Override
-	public void attackingScan(BaseBot robot) {
+	public void attackingScan(BaseBot robot) {		
 		// Radar Scanning
 		// FullScan finished, start sweep scan
-		if (!fullScan.execute(robot) && radarState == RadarState.FullScan) {
+		if (!fullScan.getScanning() && radarState == RadarState.FullScan) {
 			System.out.println("Full scan finished.");
 			// Sweep search for our target at last known position
 			sweepScan.attackingScan(robot);
@@ -32,7 +36,7 @@ public class FullSweepLockStrategy extends RadarStrategy {
 		}	
 
 		if (isEnemyLocked) {
-			robot.getAimStrategy().execute(robot);
+			robot.getGunStrategy().execute(robot);
 		} else {
 			System.out.println("Enemy no longer locked.");
 			// Use sweep to find target again
@@ -49,6 +53,21 @@ public class FullSweepLockStrategy extends RadarStrategy {
 		// Reset isEnemyLocked
 		isEnemyLocked = false;
 		
+	}
+	
+	@Override
+	public void periodicScan(BaseBot robot) {
+		count++;
+		
+		if(count >= interval) {
+			System.out.println("perform periodic scan");
+			
+			radarState = RadarState.FullScan;
+			if(!fullScan.execute(robot)) {
+				return;
+			}			
+			count = 0;
+		}
 	}
 
 	@Override
