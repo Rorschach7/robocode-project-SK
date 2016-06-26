@@ -9,6 +9,9 @@ public class Bot {
 	private boolean isDead;
 	private ScannedRobotEvent info;
 	private ArrayList<EnemyWave> bulletWave;	
+	private double posX;
+	private double posY; 
+	
 	
 	public Bot() {
 		name = "None";
@@ -18,7 +21,7 @@ public class Bot {
 	public void init(ScannedRobotEvent event) {
 		info = event;
 		name = event.getName();	
-		isDead = false;
+		isDead = false;		
 	}
 	
 	public void addBulletWave(EnemyWave bulletWave){
@@ -60,6 +63,34 @@ public class Bot {
 	
 	public boolean isDead() {
 		return isDead;
+	}
+	
+	/**
+	 * This function does not calculate any position. It simply returns the x value.
+	 * Use this only if you updated the position with the updatePos() method.
+	 * @return
+	 */
+	public double getPosX() {
+		return posX;
+	}
+	
+	/**
+	 * This function does not calculate any position. It simply returns the y value.
+	 * Use this only if you updated the position with the updatePos() method.
+	 * @return
+	 */
+	public double getPosY() {
+		return posY;
+	}
+	
+	/**
+	 * Sets the x and y position of the bot.
+	 * @param x
+	 * @param y
+	 */
+	public void updatePos(double x, double y) {
+		posX = x;
+		posY = y;
 	}
 
 }

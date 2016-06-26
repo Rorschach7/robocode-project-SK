@@ -1,4 +1,4 @@
-package helper.strategies;
+package helper.strategies.gun;
 
 import robocode.ScannedRobotEvent;
 import robots.BaseBot;

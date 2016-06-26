@@ -1,4 +1,4 @@
-package helper.strategies;
+package helper.strategies.movement;
 
 import robots.BaseBot;
 

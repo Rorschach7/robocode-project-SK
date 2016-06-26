@@ -1,4 +1,4 @@
-package helper.strategies;
+package helper.strategies.movement;
 
 import helper.Bot;
 import helper.FuncLib;

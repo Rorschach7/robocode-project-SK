@@ -1,8 +1,9 @@
 package robots;
 
 import java.awt.Color;
-
-import helper.strategies.*;
+import helper.strategies.gun.DynamicChange;
+import helper.strategies.movement.RandomMovement;
+import helper.strategies.movement.SpinAroundMovement;
 
 public class MilestoneBot extends BaseBot {
 	
@@ -17,7 +18,7 @@ public class MilestoneBot extends BaseBot {
 		setBulletColor(Color.green);
 		
 		// Strategies
-		aimStrategy = new DynamicChange();
+		gunStrategy = new DynamicChange();
 		dodgeBullet = new RandomMovement(); 
 		victoryDance = new SpinAroundMovement();
 		

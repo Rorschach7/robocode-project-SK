@@ -1,6 +1,9 @@
 package helper;
 
-import helper.strategies.*;
+import helper.strategies.gun.DynamicChange;
+import helper.strategies.gun.GuessTargeting;
+import helper.strategies.gun.GunStrategy;
+import helper.strategies.gun.LinTargeting;
 
 
 public class Data {

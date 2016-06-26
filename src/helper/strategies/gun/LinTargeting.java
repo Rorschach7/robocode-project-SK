@@ -1,4 +1,4 @@
-package helper.strategies;
+package helper.strategies.gun;
 
 import helper.FuncLib;
 import robocode.Rules;
