@@ -49,17 +49,20 @@ public class LinTargeting extends GunStrategy {
 			final double endY = FuncLib.limit(eY + eV * t * Math.cos(eHd),
 					ROBOT_HEIGHT / 2, robot.getBattleFieldHeight() - ROBOT_HEIGHT
 							/ 2);
+			
+			// TODO: Compensate for own movement?		
+			
 			robot.setTurnGunRightRadians(robocode.util.Utils
 					.normalRelativeAngle(Math.atan2(endX - rX, endY - rY)
 							- robot.getGunHeadingRadians()));
-			if (robot.getGunTurnRemaining() < 0.05 && !robot.checkFriendlyFire()
+			if (Math.abs(robot.getGunTurnRemaining()) < 0.025 && !robot.checkFriendlyFire()
 					&& robot.setFireBullet(power) != null) {
 				System.out.println("FIRE, LinTarget ");
 				return true;				
 			}			
 		}
 		return false;		
-	}	
+	}
 	
 	public String toString(){
 		return "Linear Targeting";		

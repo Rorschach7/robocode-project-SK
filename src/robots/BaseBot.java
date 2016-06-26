@@ -58,7 +58,7 @@ public class BaseBot extends TeamRobot {
 
 	// Strategies
 	// Gun
-	protected GunStrategy gunStrategy = new DynamicChange();
+	protected GunStrategy gunStrategy = new LinTargeting();
 	// Movement
 	protected MovementStrategy attackingMovement = new StopMovement(); // Used most of the time
 	protected MovementStrategy scanningMovement = new StopMovement(); // Used when we're performing 360 scan
