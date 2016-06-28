@@ -1,6 +1,7 @@
 package helper.strategies.target;
 
 import helper.Bot;
+import helper.Enums.State;
 
 import java.util.ArrayList;
 
@@ -13,7 +14,7 @@ public class ChooseClosestStrategy extends TargetStrategy {
 		ArrayList<Bot> enemies = robot.getEnemies();
 		if (enemies == null) {
 			return null;
-		}
+		}	
 		
 		Bot target = null;
 		// Init or assign current target
@@ -28,6 +29,13 @@ public class ChooseClosestStrategy extends TargetStrategy {
 		} else {
 			target = robot.getTarget();			
 		}
+		
+		// Check if another robot is ramming us which is not already our target.
+		// This one should then be the closest enemy there is.
+		if(robot.isHitRobot() && !robot.getMeleeAttacker().getName().equals(robot.getTarget().getName())) {			
+			robot.setState(State.Scanning);
+		}
+		
 
 		// Find closest enemy
 		for (Bot bot : enemies) {
@@ -38,8 +46,7 @@ public class ChooseClosestStrategy extends TargetStrategy {
 					.getDistance()) {
 				target = bot;
 			}
-		}
-		System.out.println("Target: " + target.getName());
+		}		
 		return target;		
 	}
 	

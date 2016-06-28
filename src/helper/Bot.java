@@ -1,6 +1,7 @@
 package helper;
 
 import java.util.ArrayList;
+
 import robocode.*;
 
 public class Bot {
@@ -18,10 +19,20 @@ public class Bot {
 		bulletWave = new ArrayList<>();
 	}
 	
+	public Bot(HitRobotEvent event) {
+		// TODO Auto-generated constructor stub
+	}
+
 	public void init(ScannedRobotEvent event) {
 		info = event;
 		name = event.getName();	
 		isDead = false;		
+	}
+	
+	public void init(HitRobotEvent event) {	
+		name = event.getName();
+		isDead = false;
+		
 	}
 	
 	public void addBulletWave(EnemyWave bulletWave){
@@ -92,5 +103,6 @@ public class Bot {
 		posX = x;
 		posY = y;
 	}
+
 
 }

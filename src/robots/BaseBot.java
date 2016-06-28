@@ -31,12 +31,13 @@ public class BaseBot extends TeamRobot {
 	protected ArrayList<Bot> enemies = new ArrayList<>();
 	protected ArrayList<Bot> team = new ArrayList<>();
 	protected Bot attacker; // Robot which last attacked us
+	private Bot meleeAttacker;
 	protected Bot target;	
 	
 	protected boolean bulletHit;
 	protected int moveDirection = 1;// >0 : turn right, <0 : tun left		
 	protected boolean gameOver = false;
-	protected boolean hitRobot;	
+	private boolean hitRobot;	
 	protected double bulletVelocity;	
 	protected int fireDirection; 
 	protected double bulletPower;
@@ -153,9 +154,12 @@ public class BaseBot extends TeamRobot {
 		}
 		attacker.init(event);
 	}
-
+	
 	public void onHitRobot(HitRobotEvent event) {
-		hitRobot = true;
+		System.out.println("Robot collision!");
+		setHitRobot(true);
+		setMeleeAttacker(new Bot());
+		getMeleeAttacker().init(event);
 	}
 
 	public void onRobotDeath(RobotDeathEvent event) {
@@ -350,6 +354,11 @@ public class BaseBot extends TeamRobot {
 			getGunStrategy().execute(this);
 		}
 		
+		// Reset hitRobot
+		if(isHitRobot()) {			
+			setHitRobot(false);
+		}
+		
 		// Print status
 		if(printStatus) {
 			printStatus();
@@ -478,9 +487,9 @@ public class BaseBot extends TeamRobot {
 	 */
 	private void detectBullet(double deltaEnergy) {
 
-		if (deltaEnergy > 3 || bulletHit || hitRobot) {
+		if (deltaEnergy > 3 || bulletHit || isHitRobot()) {
 			bulletHit = false;
-			hitRobot = false;
+			setHitRobot(false);
 			return;
 		}
 
@@ -709,5 +718,21 @@ public class BaseBot extends TeamRobot {
 	
 	public boolean getPeriodicScan() {
 		return periodicScan;
+	}
+
+	public boolean isHitRobot() {
+		return hitRobot;
+	}
+
+	public void setHitRobot(boolean hitRobot) {
+		this.hitRobot = hitRobot;
+	}
+
+	public Bot getMeleeAttacker() {
+		return meleeAttacker;
+	}
+
+	public void setMeleeAttacker(Bot meleeAttacker) {
+		this.meleeAttacker = meleeAttacker;
 	}
 }

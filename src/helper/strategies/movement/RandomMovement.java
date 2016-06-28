@@ -18,8 +18,7 @@ public class RandomMovement extends MovementStrategy {
 	
 	@Override
 	public void execute(BaseBot robot) {		
-		if (isEvading) {
-			System.out.println("evading");
+		if (isEvading) {			
 			robot.goTo(randPoint.getX(), randPoint.getY());
 			evadeRounds--;
 			// check if we reached desired position
@@ -30,7 +29,7 @@ public class RandomMovement extends MovementStrategy {
 				System.out.println("reached point");
 			}
 		} else {
-			System.out.println("Start randomMovement");
+			//System.out.println("Start randomMovement");
 			randPoint = calculateRandomPoint(robot);
 			isEvading = true;
 		}
