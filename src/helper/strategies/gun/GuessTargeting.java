@@ -51,7 +51,7 @@ public class GuessTargeting extends GunStrategy {
 
 		robot.setTurnGunRightRadians(gunAdjust);
 
-		if (robot.getGunHeat() == 0 && Math.abs(robot.getGunTurnRemaining()) < 0.025 && !robot.checkFriendlyFire() && robot.setFireBullet(power) != null) {
+		if (robot.getGunHeat() == 0 && Math.abs(robot.getGunTurnRemaining()) < 0.035 && !robot.checkFriendlyFire() && robot.setFireBullet(power) != null) {
 			waves.add(newWave);
 			System.out.println("Fire, Guess Shooting ");
 			return true;			

@@ -172,14 +172,14 @@ public class BaseBot extends TeamRobot {
 		for (Bot bot : enemies) {
 			if (bot.getName().equals(event.getName())) {
 				bot.died();
-				return;
+				break;
 			}
 		}
 
 		// Our target just died, we need a new one
 		if (getTarget().getName().equals(event.getName())) {
-			setState(State.Scanning);
-			//runScan(RadarState.FullScan);			
+			System.out.println("Target is dead, acquire new target.");
+			setState(State.Scanning);						
 		}
 	}
 

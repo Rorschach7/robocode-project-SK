@@ -17,7 +17,7 @@ public class ChooseWeakestStrategy extends TargetStrategy {
 		
 		Bot target = null;
 		// Init or assign any enemy as current target
-		if(robot.getTarget() == null) {
+		if(robot.getTarget() == null || robot.getTarget().isDead()) {
 			// Choose next best enemy
 			for (Bot bot : enemies) {
 				if(!bot.isDead()) {

@@ -55,7 +55,7 @@ public class LinTargeting extends GunStrategy {
 			robot.setTurnGunRightRadians(robocode.util.Utils
 					.normalRelativeAngle(Math.atan2(endX - rX, endY - rY)
 							- robot.getGunHeadingRadians()));
-			if (Math.abs(robot.getGunTurnRemaining()) < 0.025 && !robot.checkFriendlyFire()
+			if (Math.abs(robot.getGunTurnRemaining()) < 0.035 && !robot.checkFriendlyFire()
 					&& robot.setFireBullet(power) != null) {
 				System.out.println("FIRE, LinTarget ");
 				return true;				
