@@ -311,7 +311,7 @@ public class BaseBot extends TeamRobot {
 		
 		// Broadcast position to team
 		if(getTeammates() != null) {
-			String message = "TEAMPOS " + getName() + ":" + getX() + ":" + getY();
+			String message = "TEAMPOS " + getX() + ":" + getY();
 			try {
 				broadcastMessage(message);
 			} catch (IOException e) {				
