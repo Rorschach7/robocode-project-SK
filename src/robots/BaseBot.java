@@ -31,13 +31,13 @@ public class BaseBot extends TeamRobot {
 	protected ArrayList<Bot> enemies = new ArrayList<>();
 	protected ArrayList<Bot> team = new ArrayList<>();
 	protected Bot attacker; // Robot which last attacked us
-	private Bot meleeAttacker;
+	protected Bot meleeAttacker;
 	protected Bot target;	
 	
 	protected boolean bulletHit;
 	protected int moveDirection = 1;// >0 : turn right, <0 : tun left		
 	protected boolean gameOver = false;
-	private boolean hitRobot;	
+	protected boolean robotCollision;	
 	protected double bulletVelocity;	
 	protected int fireDirection; 
 	protected double bulletPower;
@@ -68,7 +68,8 @@ public class BaseBot extends TeamRobot {
 	// Radar 
 	protected RadarStrategy radarStrategy = new FullSweepLockStrategy();
 	// Choose target
-	protected TargetStrategy targetStrategy = new ChooseClosestStrategy();
+	private TargetStrategy targetStrategy = new ChooseClosestStrategy();
+	private boolean collide;
 
 	public void run() {		
 
@@ -157,9 +158,16 @@ public class BaseBot extends TeamRobot {
 	
 	public void onHitRobot(HitRobotEvent event) {
 		System.out.println("Robot collision!");
-		setHitRobot(true);
+		robotCollision = true;
 		setMeleeAttacker(new Bot());
 		getMeleeAttacker().init(event);
+		
+		// Make the robot that just rammed into as, our new target
+		System.out.println(target.getName() + " " + event.getName());
+		if(!target.getName().equals(event.getName())) {			
+			System.out.println("Ram Scan ");
+			state = State.Scanning;			
+		}
 	}
 
 	public void onRobotDeath(RobotDeathEvent event) {
@@ -327,7 +335,7 @@ public class BaseBot extends TeamRobot {
 		if (getState() == State.Attacking) {
 			
 			// Find Target
-			target = targetStrategy.execute(this);
+			//target = targetStrategy.execute(this);
 			
 			// Radar attacking strategy
 			radarStrategy.attackingScan(this);
@@ -355,8 +363,8 @@ public class BaseBot extends TeamRobot {
 		}
 		
 		// Reset hitRobot
-		if(isHitRobot()) {			
-			setHitRobot(false);
+		if(robotCollision) {			
+			robotCollision = false;
 		}
 		
 		// Print status
@@ -487,9 +495,8 @@ public class BaseBot extends TeamRobot {
 	 */
 	private void detectBullet(double deltaEnergy) {
 
-		if (deltaEnergy > 3 || bulletHit || isHitRobot()) {
-			bulletHit = false;
-			setHitRobot(false);
+		if (deltaEnergy > 3 || bulletHit || robotCollision) {
+			bulletHit = false;			
 			return;
 		}
 
@@ -718,15 +725,7 @@ public class BaseBot extends TeamRobot {
 	
 	public boolean getPeriodicScan() {
 		return periodicScan;
-	}
-
-	public boolean isHitRobot() {
-		return hitRobot;
-	}
-
-	public void setHitRobot(boolean hitRobot) {
-		this.hitRobot = hitRobot;
-	}
+	}	
 
 	public Bot getMeleeAttacker() {
 		return meleeAttacker;
@@ -734,5 +733,13 @@ public class BaseBot extends TeamRobot {
 
 	public void setMeleeAttacker(Bot meleeAttacker) {
 		this.meleeAttacker = meleeAttacker;
+	}
+
+	public TargetStrategy getTargetStrategy() {
+		return targetStrategy;
+	}
+
+	public void setTargetStrategy(TargetStrategy targetStrategy) {
+		this.targetStrategy = targetStrategy;
 	}
 }

@@ -18,7 +18,7 @@ public class MilestoneBot extends BaseBot {
 		setBulletColor(Color.green);
 		
 		// Strategies
-		gunStrategy = new DynamicChange();
+		gunStrategy = new DynamicChange();		
 		dodgeBullet = new RandomMovement(); 
 		victoryDance = new SpinAroundMovement();
 		

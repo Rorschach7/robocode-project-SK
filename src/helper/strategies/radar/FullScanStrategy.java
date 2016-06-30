@@ -39,6 +39,7 @@ public class FullScanStrategy extends RadarStrategy {
 			return false;
 		} else if (robot.getRadarTurnRemaining() < 10) {
 			// Scan finished
+			System.out.println("Scan finished");
 			scanning = false;
 			return true;
 		}
