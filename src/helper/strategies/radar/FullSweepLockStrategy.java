@@ -30,7 +30,8 @@ public class FullSweepLockStrategy extends RadarStrategy {
 		// FullScan finished, start sweep scan
 		if (!fullScan.getScanning() && radarState == RadarState.FullScan) {			
 			// Find target
-			robot.setTarget(robot.getTargetStrategy().execute(robot));
+			// TODO:
+			//robot.setTarget(robot.getTargetStrategy().execute(robot));
 			
 			System.out.println("Full scan finished.");
 			// Sweep search for our target at last known position
@@ -44,7 +45,7 @@ public class FullSweepLockStrategy extends RadarStrategy {
 			System.out.println("Enemy no longer locked.");
 			// Use sweep to find target again
 			// do a full scan if target cannot be found after given rounds
-			if (sweepScanCount < 10 && (radarState == RadarState.Lock || radarState == RadarState.Sweep)) {
+			if (sweepScanCount < 7 && (radarState == RadarState.Lock || radarState == RadarState.Sweep)) {
 				sweepScan.execute(robot);
 				radarState = RadarState.Sweep;
 				System.out.println("Do Sweep");

@@ -68,8 +68,8 @@ public class BaseBot extends TeamRobot {
 	// Radar 
 	protected RadarStrategy radarStrategy = new FullSweepLockStrategy();
 	// Choose target
-	private TargetStrategy targetStrategy = new ChooseClosestStrategy();
-	private boolean collide;
+	protected TargetStrategy targetStrategy = new ChooseClosestStrategy();
+	
 
 	public void run() {		
 
@@ -162,12 +162,14 @@ public class BaseBot extends TeamRobot {
 		setMeleeAttacker(new Bot());
 		getMeleeAttacker().init(event);
 		
-		// Make the robot that just rammed into as, our new target
-		System.out.println(target.getName() + " " + event.getName());
-		if(!target.getName().equals(event.getName())) {			
-			System.out.println("Ram Scan ");
-			state = State.Scanning;			
-		}
+		targetStrategy.rammingTarget(this, event);
+		
+//		// Make the robot that just rammed into as, our new target
+//		System.out.println(target.getName() + " " + event.getName());
+//		if(!target.getName().equals(event.getName())) {			
+//			System.out.println("Ram Scan ");
+//			state = State.Scanning;			
+//		}
 	}
 
 	public void onRobotDeath(RobotDeathEvent event) {
@@ -318,7 +320,7 @@ public class BaseBot extends TeamRobot {
 		
 		// Broadcast position to team
 		if(getTeammates() != null) {
-			String message = "TEAMPOS " + getX() + ":" + getY();
+			String message = "TEAMPOS " + getName() + ":" + getX() + ":" + getY();
 			try {
 				broadcastMessage(message);
 			} catch (IOException e) {				
@@ -335,7 +337,7 @@ public class BaseBot extends TeamRobot {
 		if (getState() == State.Attacking) {
 			
 			// Find Target
-			//target = targetStrategy.execute(this);
+			target = targetStrategy.execute(this);
 			
 			// Radar attacking strategy
 			radarStrategy.attackingScan(this);

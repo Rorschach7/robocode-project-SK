@@ -1,6 +1,9 @@
 package helper.strategies.target;
 
 import helper.Bot;
+import helper.Enums.State;
+import robocode.HitRobotEvent;
+
 import java.util.ArrayList;
 
 import robots.BaseBot;
@@ -39,6 +42,15 @@ public class ChooseClosestStrategy extends TargetStrategy {
 			}
 		}		
 		return target;		
+	}
+	
+	@Override
+	public void rammingTarget(BaseBot robot, HitRobotEvent event) {
+		// Make the robot that just rammed into as, our new target
+		if (!robot.getTarget().getName().equals(event.getName())) {
+			System.out.println("Ram Scan ");
+			robot.setState(State.Scanning);
+		}
 	}
 	
 	@Override
