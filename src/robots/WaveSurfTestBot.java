@@ -1,7 +1,6 @@
 package robots;
 
 import helper.strategies.gun.DynamicChange;
-import helper.strategies.movement.RandomMovement;
 import helper.strategies.movement.SpinAroundMovement;
 import helper.strategies.movement.WaveSurfing;
 

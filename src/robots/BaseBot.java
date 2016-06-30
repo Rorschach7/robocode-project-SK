@@ -8,16 +8,13 @@ import helper.strategies.movement.*;
 import helper.strategies.radar.*;
 import helper.strategies.target.ChooseClosestStrategy;
 import helper.strategies.target.TargetStrategy;
-
 import java.awt.Color;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-
 import javafx.geometry.Point2D;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
@@ -147,29 +144,23 @@ public class BaseBot extends TeamRobot {
 	}
 
 	public void onHitByBullet(HitByBulletEvent event) {
-		attacker = FuncLib.findBotByName(event.getName(), enemies);
+		attacker = FuncLib.findBotByName(event.getName(), enemies);		
 		if(attacker == null) {
 			attacker = new Bot();
 			attacker.init(event);
 			return;
 		}
 		attacker.init(event);
+		targetStrategy.onHitByBullet(this, event);		
 	}
 	
 	public void onHitRobot(HitRobotEvent event) {
 		System.out.println("Robot collision!");
 		robotCollision = true;
 		setMeleeAttacker(new Bot());
-		getMeleeAttacker().init(event);
+		getMeleeAttacker().init(event);		
 		
-		targetStrategy.rammingTarget(this, event);
-		
-//		// Make the robot that just rammed into as, our new target
-//		System.out.println(target.getName() + " " + event.getName());
-//		if(!target.getName().equals(event.getName())) {			
-//			System.out.println("Ram Scan ");
-//			state = State.Scanning;			
-//		}
+		targetStrategy.onCollision(this, event);		
 	}
 
 	public void onRobotDeath(RobotDeathEvent event) {
@@ -332,12 +323,12 @@ public class BaseBot extends TeamRobot {
 		if(periodicScan) {
 			radarStrategy.periodicScan(this);
 		}
+		
+		// Find Target
+		//targetStrategy.execute(this);
 
 		// Execute behavior for corresponding state
-		if (getState() == State.Attacking) {
-			
-			// Find Target
-			target = targetStrategy.execute(this);
+		if (getState() == State.Attacking) {			
 			
 			// Radar attacking strategy
 			radarStrategy.attackingScan(this);
@@ -529,7 +520,7 @@ public class BaseBot extends TeamRobot {
 		Gson gson = new Gson();
 
 		try {
-			System.out.println("IN JSON");
+			//System.out.println("IN JSON");
 			return gson.fromJson(new FileReader(file), Data.class);
 		} catch (JsonSyntaxException | JsonIOException | FileNotFoundException e) {
 			System.out.println("Error while converting from Json");
@@ -686,6 +677,10 @@ public class BaseBot extends TeamRobot {
 	}
 
 	public void setState(State state) {
+		// Execute find target algorithm
+		if(state == State.Attacking) {			
+			targetStrategy.execute(this);
+		}		
 		this.state = state;
 	}
 
