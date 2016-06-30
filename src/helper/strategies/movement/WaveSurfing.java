@@ -3,7 +3,6 @@ package helper.strategies.movement;
 import java.awt.Point;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
-
 import helper.Bot;
 import helper.EnemyWave;
 import helper.FuncLib;
@@ -49,8 +48,7 @@ public class WaveSurfing extends MovementStrategy{
 
 		setBackAsFront(robot, goAngle);
 		
-	}
-	
+	}	
 
 	// CREDIT: Iterative WallSmoothing by Kawigi
 	// - return absolute angle to move at after account for WallSmoothing
@@ -131,8 +129,8 @@ public class WaveSurfing extends MovementStrategy{
 
 		double angle = Utils.normalRelativeAngle(goAngle
 				- robot.getHeadingRadians());
-		System.out.println("angle " + angle);
 		if (Math.abs(angle) > (Math.PI / 2)) {
+			System.out.println("angle " + angle);
 			if (angle < 0) {
 				robot.setTurnRightRadians(Math.PI + angle);
 			} else {
@@ -147,6 +145,7 @@ public class WaveSurfing extends MovementStrategy{
 			}
 			robot.setAhead(100);
 		}
+		System.out.println("setBackAsFront");
 	}
 	
 	public EnemyWave getClosestSurfableWave() {
