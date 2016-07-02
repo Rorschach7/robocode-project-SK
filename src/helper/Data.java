@@ -49,7 +49,7 @@ public class Data {
 	 * @param hit Did the bullet hit the target?
 	 * @param fireMode The fire mode used to fire the bullet
 	 */
-	public void BulletHit(boolean hit, GunStrategy strat) {
+	public void bulletHit(boolean hit, GunStrategy strat) {
 		GunStrategy strategy = strat;
 		if(strategy instanceof DynamicChange) {
 			strategy = ((DynamicChange) strat).getCurrentFireStrategy();			

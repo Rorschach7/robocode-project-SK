@@ -8,13 +8,16 @@ import helper.strategies.movement.*;
 import helper.strategies.radar.*;
 import helper.strategies.target.ChooseClosestStrategy;
 import helper.strategies.target.TargetStrategy;
+
 import java.awt.Color;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+
 import javafx.geometry.Point2D;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
@@ -151,6 +154,7 @@ public class BaseBot extends TeamRobot {
 			return;
 		}
 		attacker.init(event);
+		attacker.addAggro(event.getPower() * 4 + 2 * (event.getPower() - 1));	
 		targetStrategy.onHitByBullet(this, event);		
 	}
 	
@@ -194,7 +198,7 @@ public class BaseBot extends TeamRobot {
 	}
 
 	public void onBulletMissed(BulletMissedEvent event) {
-		FuncLib.findDataByName(getTarget().getName(), dataList).BulletHit(false, getGunStrategy());
+		FuncLib.findDataByName(getTarget().getName(), dataList).bulletHit(false, getGunStrategy());
 		misses++;		
 	}
 
@@ -203,7 +207,7 @@ public class BaseBot extends TeamRobot {
 	}
 
 	public void onBulletHit(BulletHitEvent event) {
-		FuncLib.findDataByName(getTarget().getName(), dataList).BulletHit(true, getGunStrategy());
+		FuncLib.findDataByName(getTarget().getName(), dataList).bulletHit(true, getGunStrategy());
 		bulletHit = true;
 		hits++;		
 	}

@@ -12,6 +12,7 @@ public class Bot {
 	private ArrayList<EnemyWave> bulletWave;	
 	private double posX;
 	private double posY; 
+	private double aggro;
 	
 	
 	public Bot() {
@@ -102,6 +103,28 @@ public class Bot {
 	public void updatePos(double x, double y) {
 		posX = x;
 		posY = y;
+	}
+	
+	public void addAggro(double aggro) {
+		this.aggro += aggro;
+	}
+	
+	public void resetAggro() {
+		this.aggro = 0;
+	}
+
+	/**
+	 * @return the aggro
+	 */
+	public double getAggro() {
+		return aggro;
+	}
+
+	/**
+	 * @param aggro the aggro to set
+	 */
+	public void setAggro(double aggro) {
+		this.aggro = aggro;
 	}
 
 
