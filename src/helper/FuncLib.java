@@ -60,7 +60,7 @@ public class FuncLib {
 	}
 	
 	/**
-	 * Finds the specefied robot among all spotted enemies.	 * 
+	 * Returns the specefied robot from the given list.	 * 
 	 * @param name
 	 *            The name of the robot that you want.
 	 * @return the Robot if already spotted and existing, otherwise null .

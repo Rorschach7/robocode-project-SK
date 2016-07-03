@@ -1,10 +1,8 @@
 package helper.strategies.target;
 
 import helper.Bot;
-import helper.Enums.State;
-
+import helper.FuncLib;
 import java.util.ArrayList;
-
 import robocode.HitByBulletEvent;
 import robocode.HitRobotEvent;
 import robots.BaseBot;
@@ -71,7 +69,8 @@ public class ChooseAggroStrategy extends TargetStrategy {
 		//System.out.println(robot.getTarget().getName() + " " + event.getName());
 		if (!robot.getTarget().getName().equals(event.getName())) {
 			System.out.println("Who rammed us?");
-			robot.setState(State.Scanning);
+			//robot.setState(State.Scanning);
+			robot.setTarget(FuncLib.findBotByName(event.getName(), robot.getEnemies()));
 		}
 	}
 	

@@ -76,7 +76,7 @@ public class BaseBot extends TeamRobot {
 		// Color
 		setBodyColor(Color.gray);
 		setGunColor(Color.blue);
-		setRadarColor(Color.blue);
+		setRadarColor(Color.orange);
 		setBulletColor(Color.green);
 		
 		initialize();
@@ -102,7 +102,7 @@ public class BaseBot extends TeamRobot {
 		}		
 		setAdjustGunForRobotTurn(true);
 		setAdjustRadarForRobotTurn(true);
-		setAdjustRadarForGunTurn(true);		
+		setAdjustRadarForGunTurn(true);			
 	}
 
 	/**
@@ -172,7 +172,7 @@ public class BaseBot extends TeamRobot {
 			if (event.getName().equals(bot.getName())) {
 				bot.died();
 				team.remove(bot);
-				System.out.println("Team mate died");
+				System.out.println("Team mate died :(");
 				return;
 			}
 		}
@@ -248,6 +248,10 @@ public class BaseBot extends TeamRobot {
 		double score = (dataList.get(0).getGuessTargetingHits() + dataList.get(
 				0).getGuessTargetingMissed())
 				/ dataList.get(0).getGuessTargetingHits();
+		
+		if(dataList.get(0).getGuessTargetingHits() == 0) {
+			score = 0;
+		}
 		try {
 			broadcastMessage("SCORE " + score);
 		} catch (IOException e) {
@@ -276,8 +280,13 @@ public class BaseBot extends TeamRobot {
 			double score = (dataList.get(0).getGuessTargetingHits() + dataList
 					.get(0).getGuessTargetingMissed())
 					/ dataList.get(0).getGuessTargetingHits();
-			double msgScore = Double.parseDouble(info);
-			if (msgScore > score) {
+			
+			if(dataList.get(0).getGuessTargetingHits() == 0) {
+				score = 0;
+			}		
+			
+			double msgScore = Double.parseDouble(info);			
+			if (msgScore >= score) {
 				bestScore = false;
 			}
 			for (Bot bot : team) {
@@ -373,10 +382,12 @@ public class BaseBot extends TeamRobot {
 	/**
 	 * Prints current status information
 	 */
-	public void printStatus() {
+	public void printStatus() {		
 		System.out
-				.println("---------------------------------------------------------");				
-		System.out.println("Target: " + target.getName() + "Aggro: " + target.getAggro());
+				.println("---------------------------------------------------------");
+		if(target != null)
+			System.out.println("Target: " + target.getName() + "Aggro: " + target.getAggro());
+		if(attacker != null)
 		System.out.println("Attacker: " + attacker.getName());
 		System.out.println("State: " + getState());
 		System.out.println(radarStrategy);
