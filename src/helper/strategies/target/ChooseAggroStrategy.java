@@ -39,10 +39,10 @@ public class ChooseAggroStrategy extends TargetStrategy {
 				target = robot.getTarget();			
 			}	
 			
-			
+			robot.setTarget(target);
 			
 			// Find bot with the most aggro
-			target = mostAggro(robot);
+			target = mostAggro(robot);			
 			
 			if(target.getAggro() < 1.0) {	
 				// Aggro is not convinving
