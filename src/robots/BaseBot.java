@@ -6,7 +6,7 @@ import helper.Enums.*;
 import helper.strategies.gun.*;
 import helper.strategies.movement.*;
 import helper.strategies.radar.*;
-import helper.strategies.target.ChooseClosestStrategy;
+import helper.strategies.target.ChooseAggroStrategy;
 import helper.strategies.target.TargetStrategy;
 
 import java.awt.Color;
@@ -68,7 +68,7 @@ public class BaseBot extends TeamRobot {
 	// Radar 
 	protected RadarStrategy radarStrategy = new FullSweepLockStrategy();
 	// Choose target
-	protected TargetStrategy targetStrategy = new ChooseClosestStrategy();
+	protected TargetStrategy targetStrategy = new ChooseAggroStrategy();
 	
 
 	public void run() {		
@@ -159,7 +159,7 @@ public class BaseBot extends TeamRobot {
 	}
 	
 	public void onHitRobot(HitRobotEvent event) {
-		System.out.println("Robot collision!");
+		//System.out.println("Robot collision!");
 		robotCollision = true;
 		setMeleeAttacker(new Bot());
 		getMeleeAttacker().init(event);		
@@ -376,7 +376,7 @@ public class BaseBot extends TeamRobot {
 	public void printStatus() {
 		System.out
 				.println("---------------------------------------------------------");				
-		System.out.println("Target: " + getTarget().getName());
+		System.out.println("Target: " + target.getName() + "Aggro: " + target.getAggro());
 		System.out.println("Attacker: " + attacker.getName());
 		System.out.println("State: " + getState());
 		System.out.println(radarStrategy);

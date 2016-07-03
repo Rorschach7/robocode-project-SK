@@ -42,19 +42,19 @@ public class FullSweepLockStrategy extends RadarStrategy {
 		if (isEnemyLocked) {
 			robot.getGunStrategy().execute(robot);
 		} else {
-			System.out.println("Enemy no longer locked.");
+			//System.out.println("Enemy no longer locked.");
 			// Use sweep to find target again
 			// do a full scan if target cannot be found after given rounds
 			if (sweepScanCount < 7 && (radarState == RadarState.Lock || radarState == RadarState.Sweep)) {
 				sweepScan.execute(robot);
 				radarState = RadarState.Sweep;
-				System.out.println("Do Sweep");
+				//System.out.println("Do Sweep");
 				sweepScanCount++;
 			} else {
 				fullScan.execute(robot);
 				radarState = RadarState.FullScan;
 				sweepScanCount = 0;
-				System.out.println("Sweep no found. Full Scan");
+				//System.out.println("Sweep no found. Full Scan");
 			}
 		}
 		// Reset isEnemyLocked
@@ -88,7 +88,7 @@ public class FullSweepLockStrategy extends RadarStrategy {
 		// Sweep scan found target, lock on
 		if (radarState == RadarState.Sweep
 				&& robot.getTarget().getName().equals(e.getName())) {
-			System.out.println("Sweep found target, lock on");
+			//System.out.println("Sweep found target, lock on");
 			radarState = RadarState.Lock;
 			isEnemyLocked = true;
 		}

@@ -27,7 +27,7 @@ public class RandomMovement extends MovementStrategy {
 					.distance(randPoint) < 10 || evadeRounds < 0) {
 				isEvading = false;
 				robot.setState(State.Attacking);
-				System.out.println("reached point");
+				//System.out.println("reached point");
 			}
 		} else {
 			// System.out.println("Start randomMovement");

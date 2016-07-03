@@ -7,9 +7,9 @@ import robots.BaseBot;
 public abstract class TargetStrategy {
 	
 	/**
-	 * Is set to true, if the robot is supposed to find and attack a specific robot.
+	 * If set to true, the robot is supposed to find and attack a specific robot.
 	 */
-	protected boolean skipTargeting;
+	private boolean skipTargeting;
 	
 	/**
 	 * Use robot.setTarget() to communicate your target choice to the robot.
@@ -33,8 +33,22 @@ public abstract class TargetStrategy {
 	 */
 	public void onHitByBullet(BaseBot robot, HitByBulletEvent event) {
 		
-	}
+	}	
 	
+	/**
+	 * @return the skipTargeting
+	 */
+	public boolean isSkipTargeting() {
+		return skipTargeting;
+	}
+
+	/**
+	 * @param skipTargeting the skipTargeting to set
+	 */
+	public void setSkipTargeting(boolean skipTargeting) {
+		this.skipTargeting = skipTargeting;
+	}
+
 	@Override
 	public String toString() {		
 		return "Target Strategy: ";
