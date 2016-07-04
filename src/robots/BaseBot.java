@@ -102,7 +102,9 @@ public class BaseBot extends TeamRobot {
 		}		
 		setAdjustGunForRobotTurn(true);
 		setAdjustRadarForRobotTurn(true);
-		setAdjustRadarForGunTurn(true);			
+		setAdjustRadarForGunTurn(true);		
+		
+		printStatus = true;
 	}
 
 	/**
@@ -160,6 +162,12 @@ public class BaseBot extends TeamRobot {
 	
 	public void onHitRobot(HitRobotEvent event) {
 		//System.out.println("Robot collision!");
+		
+		if(FuncLib.findBotByName(event.getName(), team) != null) {
+			System.out.println("We collided with a team mate. That should not have happened.");
+			return;
+		}
+		
 		robotCollision = true;
 		setMeleeAttacker(new Bot());
 		getMeleeAttacker().init(event);		
@@ -693,7 +701,8 @@ public class BaseBot extends TeamRobot {
 
 	public void setState(State state) {
 		// Execute find target algorithm
-		if(state == State.Attacking) {			
+		if(state == State.Attacking) {	
+			System.out.println("EXECUTE TARGET STARTEGY");
 			targetStrategy.execute(this);
 		}		
 		this.state = state;

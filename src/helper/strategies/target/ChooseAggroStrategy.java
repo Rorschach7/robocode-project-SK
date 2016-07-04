@@ -16,6 +16,9 @@ public class ChooseAggroStrategy extends TargetStrategy {
 		
 		// Find new target
 		if(robot.getTarget() == null || !isSkipTargeting() || robot.getTarget().isDead()) {
+			
+			System.out.println("FIND NEW TARGET");
+			
 			// Assuming we just finished a full scan.
 			// Find a target among all enemies
 			ArrayList<Bot> enemies = robot.getEnemies();
