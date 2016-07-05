@@ -24,7 +24,6 @@ import com.google.gson.JsonSyntaxException;
 
 public class BaseBot extends TeamRobot {
 
-
 	// Variables
 	protected int nr; // number to identify in team
 	protected boolean periodicScan = false;
@@ -32,19 +31,19 @@ public class BaseBot extends TeamRobot {
 	protected ArrayList<Bot> team = new ArrayList<>();
 	protected Bot attacker; // Robot which last attacked us
 	protected Bot meleeAttacker;
-	protected Bot target;	
-	
+	protected Bot target;
+
 	protected boolean bulletHit;
-	protected int moveDirection = 1;// >0 : turn right, <0 : tun left		
+	protected int moveDirection = 1;// >0 : turn right, <0 : tun left
 	protected boolean gameOver = false;
-	protected boolean robotCollision;	
-	protected double bulletVelocity;	
-	protected int fireDirection; 
+	protected boolean robotCollision;
+	protected double bulletVelocity;
+	protected int fireDirection;
 	protected double bulletPower;
 	protected boolean printStatus;
 
 	// State
-	protected State state = State.Scanning;		
+	protected State state = State.Scanning;
 
 	// Time Handles in rounds
 	protected double scanElapsedTime;
@@ -52,7 +51,7 @@ public class BaseBot extends TeamRobot {
 	protected int sweepScanCount = 0;
 
 	// Statistics
-	protected ArrayList<Data> dataList = new ArrayList<>();	
+	protected ArrayList<Data> dataList = new ArrayList<>();
 	protected boolean bestScore = true;
 	protected double hits;
 	protected double hitsTaken;
@@ -63,36 +62,50 @@ public class BaseBot extends TeamRobot {
 	// Gun
 	protected GunStrategy gunStrategy = new LinTargeting();
 	// Movement
-	protected MovementStrategy attackingMovement = new StopMovement(); // Used most of the time
-	protected MovementStrategy scanningMovement = new StopMovement(); // Used when we're performing 360 scan
-	protected MovementStrategy dodgeBullet = new RandomMovement(); // Used to dodge incoming bullet
-	protected MovementStrategy victoryDance = new SpinAroundMovement(); // Use for victory dance	
-	// Radar 
+	protected MovementStrategy attackingMovement = new StopMovement(); // Used
+																		// most
+																		// of
+																		// the
+																		// time
+	protected MovementStrategy scanningMovement = new StopMovement(); // Used
+																		// when
+																		// we're
+																		// performing
+																		// 360
+																		// scan
+	protected MovementStrategy dodgeBullet = new RandomMovement(); // Used to
+																	// dodge
+																	// incoming
+																	// bullet
+	protected MovementStrategy victoryDance = new SpinAroundMovement(); // Use
+																		// for
+																		// victory
+																		// dance
+	// Radar
 	protected RadarStrategy radarStrategy = new FullSweepLockStrategy();
 	// Choose target
 	protected TargetStrategy targetStrategy = new ChooseAggroStrategy();
-	
 
-	public void run() {		
+	public void run() {
 
 		// Color
 		setBodyColor(Color.gray);
 		setGunColor(Color.blue);
 		setRadarColor(Color.orange);
 		setBulletColor(Color.green);
-		
+
 		initialize();
-		
+
 		setState(State.Scanning);
 
 		while (true) {
 			scan();
 		}
 	}
-	
+
 	/**
-	 * This method is called in the run method of robocode.
-	 * Use/Override this method to initialize robot with certain strategies or set its colors.
+	 * This method is called in the run method of robocode. Use/Override this
+	 * method to initialize robot with certain strategies or set its colors.
 	 * Always use super call first.
 	 */
 	public void initialize() {
@@ -101,16 +114,17 @@ public class BaseBot extends TeamRobot {
 			int start = getName().indexOf("(");
 			int end = getName().indexOf(")");
 			nr = Integer.parseInt(getName().substring(start + 1, end));
-		}		
+		}
 		setAdjustGunForRobotTurn(true);
 		setAdjustRadarForRobotTurn(true);
-		setAdjustRadarForGunTurn(true);		
-		
+		setAdjustRadarForGunTurn(true);
+
 		printStatus = true;
 	}
 
 	/**
 	 * Moves the robot 20 units towards the position.
+	 * 
 	 * @param x
 	 * @param y
 	 */
@@ -139,43 +153,44 @@ public class BaseBot extends TeamRobot {
 		}
 		setTurnLeft(ang);
 	}
-	
+
 	public void onScannedRobot(ScannedRobotEvent e) {
 		update(e);
 		// Collect data dependent on strategy
 		dodgeBullet.collectData(this, e);
 		attackingMovement.collectData(this, e);
 		getGunStrategy().collectData(this, e);
-		
-		radarStrategy.execute(this, e);		
+
+		radarStrategy.execute(this, e);
 	}
 
 	public void onHitByBullet(HitByBulletEvent event) {
-		attacker = FuncLib.findBotByName(event.getName(), enemies);		
-		if(attacker == null) {
+		attacker = FuncLib.findBotByName(event.getName(), enemies);
+		if (attacker == null) {
 			attacker = new Bot();
 			attacker.init(event);
 			return;
 		}
 		attacker.init(event);
-		attacker.addAggro(event.getPower() * 4 + 2 * (event.getPower() - 1));	
-		targetStrategy.onHitByBullet(this, event);		
+		attacker.addAggro(event.getPower() * 4 + 2 * (event.getPower() - 1));
+		targetStrategy.onHitByBullet(this, event);
 		hitsTaken++;
 	}
-	
+
 	public void onHitRobot(HitRobotEvent event) {
-		//System.out.println("Robot collision!");
-		
-		if(FuncLib.findBotByName(event.getName(), team) != null) {
-			System.out.println("We collided with a team mate. That should not have happened.");
+		// System.out.println("Robot collision!");
+
+		if (FuncLib.findBotByName(event.getName(), team) != null) {
+			System.out
+					.println("We collided with a team mate. That should not have happened.");
 			return;
 		}
-		
+
 		robotCollision = true;
 		setMeleeAttacker(new Bot());
-		getMeleeAttacker().init(event);		
-		
-		targetStrategy.onCollision(this, event);		
+		getMeleeAttacker().init(event);
+
+		targetStrategy.onCollision(this, event);
 	}
 
 	public void onRobotDeath(RobotDeathEvent event) {
@@ -199,7 +214,7 @@ public class BaseBot extends TeamRobot {
 		// Our target just died, we need a new one
 		if (getTarget().getName().equals(event.getName())) {
 			System.out.println("Target is dead, acquire new target.");
-			setState(State.Scanning);						
+			setState(State.Scanning);
 		}
 	}
 
@@ -209,8 +224,9 @@ public class BaseBot extends TeamRobot {
 	}
 
 	public void onBulletMissed(BulletMissedEvent event) {
-		FuncLib.findDataByName(getTarget().getName(), dataList).bulletHit(false, getGunStrategy());
-		misses++;		
+		FuncLib.findDataByName(getTarget().getName(), dataList).bulletHit(
+				false, getGunStrategy());
+		misses++;
 	}
 
 	public void onWin(WinEvent event) {
@@ -218,9 +234,10 @@ public class BaseBot extends TeamRobot {
 	}
 
 	public void onBulletHit(BulletHitEvent event) {
-		FuncLib.findDataByName(getTarget().getName(), dataList).bulletHit(true, getGunStrategy());
+		FuncLib.findDataByName(getTarget().getName(), dataList).bulletHit(true,
+				getGunStrategy());
 		bulletHit = true;
-		hits++;		
+		hits++;
 	}
 
 	public void onDeath(DeathEvent event) {
@@ -228,7 +245,7 @@ public class BaseBot extends TeamRobot {
 			data.lost();
 		}
 		System.out.println("DEFEAT");
-		
+
 		if (getTeammates() == null) {
 			saveData();
 			return;
@@ -245,8 +262,9 @@ public class BaseBot extends TeamRobot {
 			System.out.println("VICTORY");
 			victoryDance.execute(this);
 		}
-		
-		System.out.println(getGunStrategy() + " acc: " + getGunStrategy().getAccuracy(this));
+
+		System.out.println(getGunStrategy() + " acc: "
+				+ getGunStrategy().getAccuracy(this));
 
 		gameOver = true;
 
@@ -259,8 +277,8 @@ public class BaseBot extends TeamRobot {
 		double score = (dataList.get(0).getGuessTargetingHits() + dataList.get(
 				0).getGuessTargetingMissed())
 				/ dataList.get(0).getGuessTargetingHits();
-		
-		if(dataList.get(0).getGuessTargetingHits() == 0) {
+
+		if (dataList.get(0).getGuessTargetingHits() == 0) {
 			score = 0;
 		}
 		try {
@@ -268,6 +286,8 @@ public class BaseBot extends TeamRobot {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
+		//TODO broadcast movement score
 
 	}
 
@@ -291,12 +311,12 @@ public class BaseBot extends TeamRobot {
 			double score = (dataList.get(0).getGuessTargetingHits() + dataList
 					.get(0).getGuessTargetingMissed())
 					/ dataList.get(0).getGuessTargetingHits();
-			
-			if(dataList.get(0).getGuessTargetingHits() == 0) {
+
+			if (dataList.get(0).getGuessTargetingHits() == 0) {
 				score = 0;
-			}		
-			
-			double msgScore = Double.parseDouble(info);			
+			}
+
+			double msgScore = Double.parseDouble(info);
 			if (msgScore >= score) {
 				bestScore = false;
 			}
@@ -312,97 +332,98 @@ public class BaseBot extends TeamRobot {
 				saveData();
 			}
 		}
-		
-		if (start.equals("TEAMPOS")) {			
+
+		if (start.equals("TEAMPOS")) {
 			int n = info.indexOf(":");
 			double x = Double.parseDouble(info.substring(0, n));
 			double y = Double.parseDouble(info.substring(n + 1));
-			
+
 			for (Bot bot : team) {
-				if(bot.getName().equals(event.getSender())) {
+				if (bot.getName().equals(event.getSender())) {
 					bot.updatePos(x, y);
 					return;
 				}
-			}			
+			}
 		}
-		
+
 	}
 
 	public void onStatus(StatusEvent event) {
 		if (gameOver) {
 			return;
 		}
-		
+
 		// Broadcast position to team
-		if(getTeammates() != null) {
+		if (getTeammates() != null) {
 			String message = "TEAMPOS " + getX() + ":" + getY();
 			try {
 				broadcastMessage(message);
-			} catch (IOException e) {				
+			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
-		
+
 		// Periodic scan
-		if(periodicScan) {
+		if (periodicScan) {
 			radarStrategy.periodicScan(this);
 		}
-		
+
 		// Find Target
-		//targetStrategy.execute(this);
+		// targetStrategy.execute(this);
 
 		// Execute behavior for corresponding state
-		if (getState() == State.Attacking) {			
-			
+		if (getState() == State.Attacking) {
+
 			// Radar attacking strategy
 			radarStrategy.attackingScan(this);
-			
+
 			// Attacking movement strategy
 			attackingMovement.execute(this);
 		}
-		
+
 		// In this state we want to perform a full scan of the battlefield
 		if (getState() == State.Scanning) {
 			// Scanning movement strategy
 			scanningMovement.execute(this);
-			
+
 			// Scanning scan strategy
 			radarStrategy.scanningScan(this);
 		}
 
 		if (getState() == State.Evading) {
-			
-			// Doge bullet movement strategy	
+
+			// Doge bullet movement strategy
 			dodgeBullet.execute(this);
-			
+
 			// Doge bullet gun strategy
 			getGunStrategy().execute(this);
 		}
-		
+
 		// Reset hitRobot
-		if(robotCollision) {			
+		if (robotCollision) {
 			robotCollision = false;
 		}
-		
+
 		// Print status
-		if(printStatus) {
+		if (printStatus) {
 			printStatus();
-		}		
-	}	
+		}
+	}
 
 	/**
 	 * Prints current status information
 	 */
-	public void printStatus() {		
+	public void printStatus() {
 		System.out
 				.println("---------------------------------------------------------");
-		if(target != null)
-			System.out.println("Target: " + target.getName() + "Aggro: " + target.getAggro());
-		if(attacker != null)
-		System.out.println("Attacker: " + attacker.getName());
+		if (target != null)
+			System.out.println("Target: " + target.getName() + "Aggro: "
+					+ target.getAggro());
+		if (attacker != null)
+			System.out.println("Attacker: " + attacker.getName());
 		System.out.println("State: " + getState());
 		System.out.println(radarStrategy);
-		System.out.println(gunStrategy);		
+		System.out.println(gunStrategy);
 		System.out.println("Dodge Strategy: " + dodgeBullet);
 		System.out
 				.println("---------------------------------------------------------");
@@ -417,6 +438,7 @@ public class BaseBot extends TeamRobot {
 
 	public void update(ScannedRobotEvent robot) {
 		// Scan energy
+		//TODO check if bot already exist in data
 		if (getTarget() != null
 				&& getTarget().getName().equals(robot.getName())) {
 			double enemyDeltaEnergy = getTarget().getInfo().getEnergy()
@@ -502,20 +524,20 @@ public class BaseBot extends TeamRobot {
 				dataList.add(data);
 			}
 		}
-	}	
+
+	}
 
 	/**
 	 * Tries to figure out if enemy tank shoots at us and starts evasive
-	 * maneuver if
+	 * maneuver
 	 * 
 	 * @param deltaEnergy
 	 *            the energy the targeted tank lost between last and current
 	 *            turn
 	 */
 	private void detectBullet(double deltaEnergy) {
-
 		if (deltaEnergy > 3 || bulletHit || robotCollision) {
-			bulletHit = false;			
+			bulletHit = false;
 			return;
 		}
 
@@ -523,13 +545,14 @@ public class BaseBot extends TeamRobot {
 		double wallDmg = getTarget().getInfo().getVelocity() * 0.5 - 1;
 		if (deltaEnergy == wallDmg) {
 			return;
-		}		
+		}
 
+		FuncLib.findDataByName(getTarget().getName(), dataList).detectedBullet(getDodgeBullet(), hitsTaken);
 		enemyBulletsDetected++;
-		setBulletVelocity(20 - 3 * deltaEnergy);		
-		setState(State.Evading);		
+		setBulletVelocity(20 - 3 * deltaEnergy);
+		setState(State.Evading);
 	}
-	
+
 	/**
 	 * Tries to load the data file with the specified name, return the object if
 	 * found or null if not.
@@ -547,7 +570,7 @@ public class BaseBot extends TeamRobot {
 		Gson gson = new Gson();
 
 		try {
-			//System.out.println("IN JSON");
+			// System.out.println("IN JSON");
 			return gson.fromJson(new FileReader(file), Data.class);
 		} catch (JsonSyntaxException | JsonIOException | FileNotFoundException e) {
 			System.out.println("Error while converting from Json");
@@ -618,7 +641,7 @@ public class BaseBot extends TeamRobot {
 		Point2D fwd = new Point2D(Math.sin(getGunHeadingRadians()),
 				Math.cos(getGunHeadingRadians()));
 		Point2D right = new Point2D(fwd.getY(), -fwd.getX());
-	
+
 		// and then check if another tank overlaps
 		Point2D a = right.multiply(20).add(self);
 		Point2D d = right.multiply(-20).add(self);
@@ -667,27 +690,27 @@ public class BaseBot extends TeamRobot {
 	public void setDirection(int direction) {
 		this.fireDirection = direction;
 	}
-	
+
 	public double getHits() {
 		return hits;
 	}
-	
+
 	public void setHits(double hits) {
 		this.hits = hits;
 	}
-	
+
 	public double getMisses() {
 		return misses;
 	}
-	
+
 	public void setMisses(double misses) {
 		this.misses = misses;
 	}
-	
+
 	public ArrayList<Bot> getEnemies() {
 		return enemies;
 	}
-	
+
 	public ArrayList<Bot> getTeam() {
 		return team;
 	}
@@ -706,10 +729,10 @@ public class BaseBot extends TeamRobot {
 
 	public void setState(State state) {
 		// Execute find target algorithm
-		if(state == State.Attacking) {	
+		if (state == State.Attacking) {
 			System.out.println("EXECUTE TARGET STARTEGY");
 			targetStrategy.execute(this);
-		}		
+		}
 		this.state = state;
 	}
 
@@ -720,11 +743,11 @@ public class BaseBot extends TeamRobot {
 	public void setBulletPower(double bulletPower) {
 		this.bulletPower = bulletPower;
 	}
-	
+
 	public ArrayList<Data> getDataList() {
 		return dataList;
 	}
-	
+
 	public int getMoveDirection() {
 		return moveDirection;
 	}
@@ -744,14 +767,14 @@ public class BaseBot extends TeamRobot {
 	public void setTarget(Bot target) {
 		this.target = target;
 	}
-	
-	public void setPeriodicScan(boolean periodicScan) {		
+
+	public void setPeriodicScan(boolean periodicScan) {
 		this.periodicScan = periodicScan;
 	}
-	
+
 	public boolean getPeriodicScan() {
 		return periodicScan;
-	}	
+	}
 
 	public Bot getMeleeAttacker() {
 		return meleeAttacker;
@@ -783,5 +806,13 @@ public class BaseBot extends TeamRobot {
 
 	public void setEnemyBulletsDetected(double enemyBulletsDetected) {
 		this.enemyBulletsDetected = enemyBulletsDetected;
+	}
+
+	public MovementStrategy getDodgeBullet() {
+		return dodgeBullet;
+	}
+
+	public void setDodgeBullet(MovementStrategy dodgeBullet) {
+		this.dodgeBullet = dodgeBullet;
 	}
 }

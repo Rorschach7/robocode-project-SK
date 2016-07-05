@@ -3,13 +3,12 @@ package helper.strategies.movement;
 
 import helper.Data;
 import helper.FuncLib;
-import robocode.RobotDeathEvent;
 import robots.BaseBot;
 
 public class DynamicMovementChange extends MovementStrategy {
 	
 	// Strategies
-	private AntiGravity antiGravity = new AntiGravity();
+	//private AntiGravity antiGravity = new AntiGravity();
 	private SingleWaveSurfing singleWaveSurfing = new SingleWaveSurfing();
 	private RandomMovement randomMovement = new RandomMovement();
 	private MovementStrategy strategy = randomMovement;
@@ -17,6 +16,8 @@ public class DynamicMovementChange extends MovementStrategy {
 	// Statistics	
 	private double successRate = 100;
 	private double formerSuccessRate = 100;
+	private double formerHitsTaken;
+	private double formerDetectedBullets;
 	
 	// Timer
 	private int count = 0;
@@ -28,19 +29,38 @@ public class DynamicMovementChange extends MovementStrategy {
 		Data data = FuncLib.findDataByName(robot.getTarget().getName(), robot.getDataList());
 		
 		//if(data.isReliable()) {		
-		if(false){
-		//TODO collect data and verify
+		if(data.movementIsReliable()){
+			System.out.println("Old Data reliable");
+			if(data.getRandomSuccRate() > data.getSurfingSuccRate()){
+				randomMovement.execute(robot);
+			}else{
+				singleWaveSurfing.execute(robot);
+			}
 		} else {
 			strategy.execute(robot);
 			count++;
 			if(count >= interval) {
 				formerSuccessRate = successRate;
+				
+				//sometimes a bullet on the fly while changing creates false data
+				if(robot.getEnemyBulletsDetected() < robot.getHitsTaken() && formerDetectedBullets != 0){
+					formerSuccessRate = (formerDetectedBullets - (formerHitsTaken+1)) / formerDetectedBullets * 100;
+					robot.setHitsTaken(robot.getHitsTaken()-1);
+				}
+				
 				successRate = (robot.getEnemyBulletsDetected() - robot.getHitsTaken()) / robot.getEnemyBulletsDetected() * 100;
 				System.out.println("current success rate: " + successRate + " bullets detected: " + robot.getEnemyBulletsDetected() + " hits Taken: " + robot.getHitsTaken());
 				
 				robot.setHitsTaken(0);
 				robot.setEnemyBulletsDetected(0);
 				count = 0;
+				
+				if(successRate > formerSuccessRate){
+					//Don't change, current movement strategy is better
+					return;
+				}
+				formerHitsTaken = robot.getHitsTaken();
+				formerDetectedBullets = robot.getEnemyBulletsDetected();				
 				
 				//TODO wont move at wave surfing
 				if(strategy instanceof RandomMovement){
@@ -51,8 +71,7 @@ public class DynamicMovementChange extends MovementStrategy {
 					strategy = randomMovement;
 				}				
 			}
-		}
-		
+		}		
 	}
 	
 	public MovementStrategy getCurrentMovementStrategy() {
