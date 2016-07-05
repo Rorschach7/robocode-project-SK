@@ -6,7 +6,7 @@ import robots.BaseBot;
 
 public class DynamicChange extends GunStrategy {
 	
-	// Strtegies
+	// Strategies
 	private LinTargeting linTargeting = new LinTargeting();
 	private GuessTargeting guessTargeting = new GuessTargeting();
 	private GunStrategy strategy = linTargeting;

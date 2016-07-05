@@ -4,6 +4,11 @@ import helper.strategies.gun.DynamicChange;
 import helper.strategies.gun.GuessTargeting;
 import helper.strategies.gun.GunStrategy;
 import helper.strategies.gun.LinTargeting;
+import helper.strategies.movement.AntiGravity;
+import helper.strategies.movement.DynamicMovementChange;
+import helper.strategies.movement.MovementStrategy;
+import helper.strategies.movement.RandomMovement;
+import helper.strategies.movement.SingleWaveSurfing;
 
 
 public class Data {
@@ -19,6 +24,8 @@ public class Data {
 	
 	private double linAccuracy;
 	private double guessAccuracy;
+	
+	private double detectedBullets;
 	
 	private int wins;
 	private int losses;
@@ -79,6 +86,31 @@ public class Data {
 		if(guessTargetingHits + guessTargetingMissed != 0) {
 			guessAccuracy = guessTargetingHits / (guessTargetingHits + guessTargetingMissed) * 100; 
 		}
+		
+	}
+	
+	//TODO
+	public void gotHitbyBullet(MovementStrategy strats, double detectedBullets){
+		MovementStrategy strategy = strats;
+		if(strategy instanceof DynamicMovementChange){
+			strategy = ((DynamicMovementChange)strats).getCurrentMovementStrategy();
+		}
+		
+		if(strategy instanceof RandomMovement){
+			
+			
+		}
+		
+		if(strategy instanceof AntiGravity){
+			
+			
+		}
+		
+		if(strategy instanceof SingleWaveSurfing){
+			
+			
+		}
+		
 		
 	}
 	

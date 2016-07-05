@@ -1,6 +1,7 @@
 package helper;
 
 import java.awt.Point;
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 
 public class FuncLib {
@@ -54,6 +55,12 @@ public class FuncLib {
 	public static double absoluteBearing(Point source, Point target) {
 		return Math.atan2(target.x - source.x, target.y - source.y);
 	}
+	
+	public static double absoluteBearing(Point2D.Double source,
+			Point2D.Double target) {
+		return Math.atan2(target.x - source.x, target.y - source.y);
+	}
+
 	
 	public static double limit(double value, double min, double max) {
 		return Math.min(max, Math.max(min, value));

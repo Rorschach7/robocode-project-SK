@@ -1,21 +1,22 @@
 package helper;
 
-import java.awt.Point;
+import java.awt.geom.Point2D;
 
 public class EnemyWave {
-    private Point fireLocation;
-    private long fireTime;
-    private double bulletVelocity, directAngle, distanceTraveled;
-    
+	Point2D.Double fireLocation;
+	private long fireTime;
+    private double bulletVelocity; 
+    private double directAngle; 
+    private double distanceTraveled;
     private int direction;
 
     public EnemyWave() { }
-
-	public Point getFireLocation() {
+    
+    public Point2D.Double getFireLocation() {
 		return fireLocation;
 	}
 
-	public void setFireLocation(Point fireLocation) {
+	public void setFireLocation(Point2D.Double fireLocation) {
 		this.fireLocation = fireLocation;
 	}
 

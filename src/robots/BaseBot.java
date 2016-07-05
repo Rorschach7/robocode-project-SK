@@ -55,6 +55,8 @@ public class BaseBot extends TeamRobot {
 	protected ArrayList<Data> dataList = new ArrayList<>();	
 	protected boolean bestScore = true;
 	protected double hits;
+	protected double hitsTaken;
+	protected double enemyBulletsDetected;
 	protected double misses;
 
 	// Strategies
@@ -158,6 +160,7 @@ public class BaseBot extends TeamRobot {
 		attacker.init(event);
 		attacker.addAggro(event.getPower() * 4 + 2 * (event.getPower() - 1));	
 		targetStrategy.onHitByBullet(this, event);		
+		hitsTaken++;
 	}
 	
 	public void onHitRobot(HitRobotEvent event) {
@@ -522,6 +525,7 @@ public class BaseBot extends TeamRobot {
 			return;
 		}		
 
+		enemyBulletsDetected++;
 		setBulletVelocity(20 - 3 * deltaEnergy);		
 		setState(State.Evading);		
 	}
@@ -762,5 +766,21 @@ public class BaseBot extends TeamRobot {
 
 	public void setTargetStrategy(TargetStrategy targetStrategy) {
 		this.targetStrategy = targetStrategy;
+	}
+
+	public double getHitsTaken() {
+		return hitsTaken;
+	}
+
+	public void setHitsTaken(double hitsTaken) {
+		this.hitsTaken = hitsTaken;
+	}
+
+	public double getEnemyBulletsDetected() {
+		return enemyBulletsDetected;
+	}
+
+	public void setEnemyBulletsDetected(double enemyBulletsDetected) {
+		this.enemyBulletsDetected = enemyBulletsDetected;
 	}
 }
