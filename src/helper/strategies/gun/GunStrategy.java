@@ -1,9 +1,15 @@
 package helper.strategies.gun;
 
+import helper.Enums.State;
+import helper.strategies.movement.MovementStrategy;
 import robocode.ScannedRobotEvent;
 import robots.BaseBot;
 
 public abstract class GunStrategy {
+	
+	private int friendlyFireThreshold = 5;
+	protected int friendlyFireCount;
+	protected MovementStrategy repositionStrategy;
 	
 	/**
 	 * Override this method to with the code you want to execute when the robot is meant to shoot.
@@ -25,5 +31,25 @@ public abstract class GunStrategy {
 	public void collectData(BaseBot robot, ScannedRobotEvent e) {
 		
 	}
+	
+	public void addToFriendlyFire(BaseBot robot) {
+		friendlyFireCount++;
+		if(friendlyFireCount >= friendlyFireThreshold) {
+			friendlyFireCount = 0;
+			if(repositionStrategy != null) {
+				robot.setState(State.Evading);
+			}
+		}
+	}
+
+	public int getFriendlyFireThreshold() {
+		return friendlyFireThreshold;
+	}
+
+	public void setFriendlyFireThreshold(int friendlyFireThreshold) {
+		this.friendlyFireThreshold = friendlyFireThreshold;
+	}
+	
+	
 
 }

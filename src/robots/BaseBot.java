@@ -648,6 +648,7 @@ public class BaseBot extends TeamRobot {
 			double ty = getY() + Math.cos(absBe) * bot.getInfo().getDistance();
 			if (xLo <= tx && tx <= xHi && yLo <= ty && ty <= yHi) {
 				System.out.println("Friendly Fire! " + bot.getName());
+				gunStrategy.addToFriendlyFire(this);
 				System.out.println(tx + " " + ty);
 				return true;
 			}
