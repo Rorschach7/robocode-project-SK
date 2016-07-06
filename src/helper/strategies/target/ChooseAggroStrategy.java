@@ -14,53 +14,59 @@ public class ChooseAggroStrategy extends TargetStrategy {
 	@Override
 	public void execute(BaseBot robot) {
 		
-		// Find new target
-		if(robot.getTarget() == null || !isSkipTargeting() || robot.getTarget().isDead()) {
-						
-			// Assuming we just finished a full scan.
-			// Find a target among all enemies
-			ArrayList<Bot> enemies = robot.getEnemies();
-			if (enemies == null) {
-				return;
-			}	
-			
-			Bot target = null;
-			// Init or assign current target
-			if(robot.getTarget() == null || robot.getTarget().isDead()) {
-				// Choose next best enemy
-				for (Bot bot : enemies) {
-					if(!bot.isDead()) {
-						target = bot;
-						break;
-					}
-				}			
-			} else {
-				target = robot.getTarget();			
-			}	
-			
-			robot.setTarget(target);
-			
-			// Find bot with the most aggro
-			target = mostAggro(robot);			
-			
-			if(target.getAggro() < 1.0) {	
-				// Aggro is not convinving
-				// Find closest enemy
-				for (Bot bot : enemies) {
-					if(bot.isDead()) {
-						continue;
-					}
-					if (target.getInfo().getDistance() > bot.getInfo()
-							.getDistance()) {
-						target = bot;
-					}
-				}		
-			}
-			
-			robot.setTarget(target);			
+		if(isSkipTargeting()) {
+			// Reset
+			setSkipTargeting(false);			
 		}
-		// Reset
-		setSkipTargeting(false);
+		System.out.println("FIND NEW TARGET");
+		// Find new target
+		// Find a target among all enemies
+		ArrayList<Bot> enemies = robot.getEnemies();
+		if (enemies == null) {
+			return;
+		}	
+		
+		Bot target = null;
+		// Init or assign current target
+		for (Bot bot : enemies) {
+			if(!bot.isDead()) {
+				target = bot;
+				break;
+			}
+		}
+		
+		System.out.println("TARGET " + target + " " + target.isDead());
+		
+		// Find bot with the most aggro
+		for(Bot bot : robot.getEnemies()) {
+			if(bot.isDead()) {
+				continue;
+			}
+			if(!bot.isDead()) {
+				if(bot.getAggro() > target.getAggro()) {
+					target = bot;
+				}
+			}
+		}
+		
+		System.out.println("AGGRO TARGET: " + target);
+		
+		if(target.getAggro() < 1.0 || target.isDead()) {	// TODO: nullptr
+			// Aggro is not convincing
+			// Find closest enemy
+			for (Bot bot : enemies) {
+				if(bot.isDead()) {
+					continue;
+				}
+				if (target.getInfo().getDistance() > bot.getInfo()
+						.getDistance()) {
+					target = bot;
+				}
+			}		
+		}
+		
+		robot.setTarget(target);			
+			
 	}	
 	
 	
@@ -77,27 +83,26 @@ public class ChooseAggroStrategy extends TargetStrategy {
 	
 	@Override
 	public void onHitByBullet(BaseBot robot, HitByBulletEvent event) {
-		// Find the enemy with the most aggro		
-		Bot newTarget = mostAggro(robot);		
+		// Find the enemy with the most aggro
+		Bot target = robot.getTarget();
+		for(Bot bot : robot.getEnemies()) {
+			if(bot.isDead()) {
+				continue;
+			}
+			if(!bot.isDead()) {
+				if(bot.getAggro() > target.getAggro()) {
+					target = bot;
+				}
+			}
+		}		
 		
-		if(!robot.getTarget().getName().equals(newTarget.getName())) {			
-			robot.setTarget(newTarget);
+		if(!robot.getTarget().getName().equals(target.getName())) {			
+			robot.setTarget(target);
 			setSkipTargeting(true);
-			System.out.println("New Target: " + newTarget.getName() + "Aggro: " + newTarget.getAggro());
+			System.out.println("New Target: " + target.getName() + "Aggro: " + target.getAggro());
 		}		
 	}
 	
-	private Bot mostAggro(BaseBot robot) {
-		Bot newTarget = robot.getTarget();
-		for(Bot bot : robot.getEnemies()) {
-			if(!bot.isDead()) {
-				if(bot.getAggro() > newTarget.getAggro()) {
-					newTarget = bot;
-				}
-			}
-		}
-		return newTarget;
-	}
 	
 	@Override
 	public String toString() {		

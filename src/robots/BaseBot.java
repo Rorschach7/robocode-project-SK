@@ -41,6 +41,7 @@ public class BaseBot extends TeamRobot {
 	protected int fireDirection;
 	protected double bulletPower;
 	protected boolean printStatus;
+	protected boolean printData;
 
 	// State
 	protected State state = State.Scanning;
@@ -60,31 +61,17 @@ public class BaseBot extends TeamRobot {
 
 	// Strategies
 	// Gun
-	protected GunStrategy gunStrategy = new LinTargeting();
+	protected GunStrategy gunStrategy = new DynamicChange();
 	// Movement
-	protected MovementStrategy attackingMovement = new StopMovement(); // Used
-																		// most
-																		// of
-																		// the
-																		// time
-	protected MovementStrategy scanningMovement = new StopMovement(); // Used
-																		// when
-																		// we're
-																		// performing
-																		// 360
-																		// scan
-	protected MovementStrategy dodgeBullet = new RandomMovement(); // Used to
-																	// dodge
-																	// incoming
-																	// bullet
-	protected MovementStrategy victoryDance = new SpinAroundMovement(); // Use
-																		// for
-																		// victory
-																		// dance
+	protected MovementStrategy attackingMovement = new StopMovement(); 
+	protected MovementStrategy scanningMovement = new StopMovement();
+	protected MovementStrategy dodgeBullet = new RandomMovement(); 
+	protected MovementStrategy victoryDance = new SpinAroundMovement(); 
 	// Radar
 	protected RadarStrategy radarStrategy = new FullSweepLockStrategy();
 	// Choose target
 	protected TargetStrategy targetStrategy = new ChooseAggroStrategy();
+	
 
 	public void run() {
 
@@ -104,7 +91,7 @@ public class BaseBot extends TeamRobot {
 	}
 
 	/**
-	 * This method is called in the run method of robocode. Use/Override this
+	 * This method is called in the run method of robocode. Override this
 	 * method to initialize robot with certain strategies or set its colors.
 	 * Always use super call first.
 	 */
@@ -119,7 +106,8 @@ public class BaseBot extends TeamRobot {
 		setAdjustRadarForRobotTurn(true);
 		setAdjustRadarForGunTurn(true);
 
-		printStatus = true;
+		printStatus = false;
+		printData = false;
 	}
 
 	/**
@@ -258,7 +246,9 @@ public class BaseBot extends TeamRobot {
 		if (getEnergy() > 0) {
 			for (Data data : dataList) {
 				data.win();
-				data.printData(true);
+				if(printData) {
+					data.printData(true);					
+				}
 			}
 			System.out.println("VICTORY");
 			victoryDance.execute(this);
@@ -374,6 +364,10 @@ public class BaseBot extends TeamRobot {
 
 		// Execute behavior for corresponding state
 		if (getState() == State.Attacking) {
+			
+			if(target.isDead()) {
+				setState(State.Scanning);
+			}
 
 			// Radar attacking strategy
 			radarStrategy.attackingScan(this);
@@ -438,8 +432,7 @@ public class BaseBot extends TeamRobot {
 	 */
 
 	public void update(ScannedRobotEvent robot) {
-		// Scan energy
-		//TODO check if bot already exist in data
+		// Scan energy		
 		if (getTarget() != null
 				&& getTarget().getName().equals(robot.getName())) {
 			double enemyDeltaEnergy = getTarget().getInfo().getEnergy()
@@ -628,6 +621,9 @@ public class BaseBot extends TeamRobot {
 	}
 
 	public boolean checkFriendlyFire() {
+		double tankWidth = 15.0;
+		
+		
 		double absBearing = getHeadingRadians()
 				+ getTarget().getInfo().getBearingRadians();
 		// find our enemy's location:
@@ -644,8 +640,8 @@ public class BaseBot extends TeamRobot {
 		Point2D right = new Point2D(fwd.getY(), -fwd.getX());
 
 		// and then check if another tank overlaps
-		Point2D a = right.multiply(20).add(self);
-		Point2D d = right.multiply(-20).add(self);
+		Point2D a = right.multiply(tankWidth).add(self);
+		Point2D d = right.multiply(-tankWidth).add(self);
 		Point2D b = a.add(fwd.multiply(self.distance(enemy)));
 		Point2D c = d.add(fwd.multiply(self.distance(enemy)));
 

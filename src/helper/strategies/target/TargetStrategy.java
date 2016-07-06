@@ -12,6 +12,7 @@ public abstract class TargetStrategy {
 	private boolean skipTargeting;
 	
 	/**
+	 * Is called when the robot goes from scanning into attacking state.
 	 * Use robot.setTarget() to communicate your target choice to the robot.
 	 * @param bot
 	 */

@@ -29,8 +29,7 @@ public class FullSweepLockStrategy extends RadarStrategy {
 		// Radar Scanning
 		// FullScan finished, start sweep scan
 		if (!fullScan.getScanning() && radarState == RadarState.FullScan) {			
-			// Find target
-			// TODO:
+			// Find target			
 			//robot.setTarget(robot.getTargetStrategy().execute(robot));
 			
 			System.out.println("Full scan finished.");
@@ -93,7 +92,7 @@ public class FullSweepLockStrategy extends RadarStrategy {
 			isEnemyLocked = true;
 		}
 
-		if (radarState == RadarState.Lock) {
+		if (radarState == RadarState.Lock) {			
 			if (robot.getTarget().getName().equals(e.getName())) {
 				isEnemyLocked = true;
 				lockScan.execute(robot);
