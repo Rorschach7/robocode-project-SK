@@ -4,7 +4,6 @@ import helper.strategies.gun.DynamicChange;
 import helper.strategies.gun.GuessTargeting;
 import helper.strategies.gun.GunStrategy;
 import helper.strategies.gun.LinTargeting;
-import helper.strategies.movement.AntiGravity;
 import helper.strategies.movement.DynamicMovementChange;
 import helper.strategies.movement.MovementStrategy;
 import helper.strategies.movement.RandomMovement;
@@ -32,6 +31,7 @@ public class Data {
 	private double hitBulletsSurfing;
 	
 	private double prevHitBullets;
+	private boolean prevRand = true;
 	
 	private double surfingSuccRate;
 	private double randomSuccRate;
@@ -110,17 +110,21 @@ public class Data {
 		}
 		
 		if(strategy instanceof RandomMovement){
+			if(!prevRand){
+				prevHitBullets = 0;
+			}
 			hitBulletsRandom += enemyBulletsHit - prevHitBullets;		
 			detectedBulletsRandom++;
-		}
-		
-		if(strategy instanceof AntiGravity){
-			//TODO			
+			prevRand = true;
 		}
 		
 		if(strategy instanceof SingleWaveSurfing){
+			if(prevRand){
+				prevHitBullets = 0;
+			}
 		   hitBulletsSurfing += enemyBulletsHit - prevHitBullets;
 		   detectedBulletsSurfing++;
+		   prevRand = false;
 		}
 		
 		
@@ -222,7 +226,7 @@ public class Data {
 	}
 
 	public boolean movementIsReliable(){
-		if(detectedBulletsRandom < 100 || detectedBulletsSurfing < 100){
+		if(detectedBulletsRandom < 200 || detectedBulletsSurfing < 200){
 			return false;
 		}else{
 			return true;

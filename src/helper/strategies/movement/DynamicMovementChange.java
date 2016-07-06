@@ -29,7 +29,6 @@ public class DynamicMovementChange extends MovementStrategy {
 		// Check if we have reliable data about our target
 		Data data = FuncLib.findDataByName(robot.getTarget().getName(), robot.getDataList());
 		
-		//if(data.isReliable()) {		
 		if(data.movementIsReliable()){
 			System.out.println("Old Data reliable");
 			if(data.getRandomSuccRate() > data.getSurfingSuccRate()){
@@ -52,21 +51,21 @@ public class DynamicMovementChange extends MovementStrategy {
 				successRate = (robot.getEnemyBulletsDetected() - robot.getHitsTaken()) / robot.getEnemyBulletsDetected() * 100;
 				System.out.println("current success rate: " + successRate + " bullets detected: " + robot.getEnemyBulletsDetected() + " hits Taken: " + robot.getHitsTaken());
 				
-				robot.setHitsTaken(0);
-				robot.setEnemyBulletsDetected(0);
 				count = 0;
+				robot.setEnemyBulletsDetected(0);
+				robot.setHitsTaken(0);
+				formerHitsTaken = robot.getHitsTaken();
+				formerDetectedBullets = robot.getEnemyBulletsDetected();				
 				
 				if(successRate > formerSuccessRate){
 					//Don't change, current movement strategy is better
 					return;
 				}
-				formerHitsTaken = robot.getHitsTaken();
-				formerDetectedBullets = robot.getEnemyBulletsDetected();				
+				System.out.println("former ht: " + formerHitsTaken + " former db: " + formerDetectedBullets);
 				
 				//TODO wont move at wave surfing
 				if(strategy instanceof RandomMovement){
-					System.out.println("switch to surfing");
-					
+					System.out.println("switch to surfing");					
 					strategy = singleWaveSurfing;
 				}else{
 					System.out.println("switch to rand");
