@@ -258,6 +258,7 @@ public class BaseBot extends TeamRobot {
 		if (getEnergy() > 0) {
 			for (Data data : dataList) {
 				data.win();
+				data.printData(true);
 			}
 			System.out.println("VICTORY");
 			victoryDance.execute(this);

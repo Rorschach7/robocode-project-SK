@@ -3,6 +3,7 @@ package helper.strategies.movement;
 
 import helper.Data;
 import helper.FuncLib;
+import robocode.ScannedRobotEvent;
 import robots.BaseBot;
 
 public class DynamicMovementChange extends MovementStrategy {
@@ -65,6 +66,7 @@ public class DynamicMovementChange extends MovementStrategy {
 				//TODO wont move at wave surfing
 				if(strategy instanceof RandomMovement){
 					System.out.println("switch to surfing");
+					
 					strategy = singleWaveSurfing;
 				}else{
 					System.out.println("switch to rand");
@@ -72,6 +74,14 @@ public class DynamicMovementChange extends MovementStrategy {
 				}				
 			}
 		}		
+	}
+	
+	@Override
+	public void collectData(BaseBot robot, ScannedRobotEvent e) {
+		if(strategy instanceof SingleWaveSurfing){
+			strategy.collectData(robot, e);
+		}
+	
 	}
 	
 	public MovementStrategy getCurrentMovementStrategy() {
