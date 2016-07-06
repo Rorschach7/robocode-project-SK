@@ -49,7 +49,4 @@ public abstract class GunStrategy {
 	public void setFriendlyFireThreshold(int friendlyFireThreshold) {
 		this.friendlyFireThreshold = friendlyFireThreshold;
 	}
-	
-	
-
 }

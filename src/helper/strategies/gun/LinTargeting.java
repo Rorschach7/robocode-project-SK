@@ -57,7 +57,7 @@ public class LinTargeting extends GunStrategy {
 							- robot.getGunHeadingRadians()));
 			if (Math.abs(robot.getGunTurnRemaining()) < 1 && !robot.checkFriendlyFire()
 					&& robot.setFireBullet(power) != null) {
-				System.out.println("FIRE, LinTarget ");
+//				System.out.println("FIRE, LinTarget ");
 				return true;				
 			}			
 		}

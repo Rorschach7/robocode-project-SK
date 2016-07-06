@@ -9,7 +9,6 @@ import robots.BaseBot;
 public class DynamicMovementChange extends MovementStrategy {
 	
 	// Strategies
-	//private AntiGravity antiGravity = new AntiGravity();
 	private SingleWaveSurfing singleWaveSurfing = new SingleWaveSurfing();
 	private RandomMovement randomMovement = new RandomMovement();
 	private MovementStrategy strategy = randomMovement;
@@ -30,7 +29,6 @@ public class DynamicMovementChange extends MovementStrategy {
 		Data data = FuncLib.findDataByName(robot.getTarget().getName(), robot.getDataList());
 		
 		if(data.movementIsReliable()){
-			System.out.println("Old Data reliable");
 			if(data.getRandomSuccRate() > data.getSurfingSuccRate()){
 				randomMovement.execute(robot);
 			}else{
@@ -61,9 +59,7 @@ public class DynamicMovementChange extends MovementStrategy {
 					//Don't change, current movement strategy is better
 					return;
 				}
-				System.out.println("former ht: " + formerHitsTaken + " former db: " + formerDetectedBullets);
 				
-				//TODO wont move at wave surfing
 				if(strategy instanceof RandomMovement){
 					System.out.println("switch to surfing");					
 					strategy = singleWaveSurfing;

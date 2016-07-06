@@ -15,7 +15,7 @@ public class RandomMovement extends MovementStrategy {
 	private boolean isEvading;
 	private Point randPoint;
 	private double evadeRounds;
-	private int teamBotArea = 40;
+	private int teamBotArea = 60;
 
 	@Override
 	public void execute(BaseBot robot) {
@@ -46,9 +46,9 @@ public class RandomMovement extends MovementStrategy {
 		ScannedRobotEvent bot = robot.getTarget().getInfo();
 		double botBearing = bot.getBearing();
 		double heading = robot.getHeading();
-		Rectangle field = new Rectangle(new Point(18, 18), new Dimension(
-				(int) robot.getBattleFieldWidth() - 36,
-				(int) robot.getBattleFieldHeight() - 36));
+		Rectangle field = new Rectangle(new Point(20, 20), new Dimension(
+				(int) robot.getBattleFieldWidth() - 40,
+				(int) robot.getBattleFieldHeight() - 40));
 
 		// TODO: change deltaAngle according to the distance to the enemy
 		double deltaAngle = 100;
