@@ -7,7 +7,7 @@ import robocode.*;
 public class Bot {
 	
 	private String name;
-	private boolean isDead;
+	private boolean isDead = false;
 	private ScannedRobotEvent info;
 	private ArrayList<EnemyWave> bulletWave;	
 	private double posX;
@@ -27,13 +27,11 @@ public class Bot {
 	public void init(ScannedRobotEvent event) {
 		info = event;
 		name = event.getName();	
-		isDead = false;		
+			
 	}
 	
 	public void init(HitRobotEvent event) {	
-		name = event.getName();
-		isDead = false;
-		
+		name = event.getName();	
 	}
 	
 	public void addBulletWave(EnemyWave bulletWave){
@@ -41,8 +39,7 @@ public class Bot {
 	}
 	
 	public void init(HitByBulletEvent event) {
-		name = event.getName();
-		isDead = false;
+		name = event.getName();		
 	}
 	
 	public ArrayList<EnemyWave> getBulletWave() {
@@ -58,7 +55,7 @@ public class Bot {
 	}
 	
 	public String toString() {
-		return name;
+		return name + " Dead: " + isDead;
 	}	
 		
 	public ScannedRobotEvent getInfo() {

@@ -182,6 +182,9 @@ public class BaseBot extends TeamRobot {
 	}
 
 	public void onRobotDeath(RobotDeathEvent event) {
+		
+		System.out.println("INFO: " + event.getName() + " died");
+		
 		for (Bot bot : team) {
 			if (event.getName().equals(bot.getName())) {
 				bot.died();
@@ -194,14 +197,14 @@ public class BaseBot extends TeamRobot {
 		// Mark robot as dead
 		for (Bot bot : enemies) {
 			if (bot.getName().equals(event.getName())) {
-				bot.died();
+				bot.died();				
 				break;
 			}
-		}
+		}	
 
 		// Our target just died, we need a new one
 		if (getTarget().getName().equals(event.getName())) {
-			System.out.println("Target is dead, acquire new target.");
+			System.out.println("INFO: Target is dead, acquire new target.");
 			setState(State.Scanning);
 		}
 	}
@@ -667,8 +670,8 @@ public class BaseBot extends TeamRobot {
 			double tx = getX() + Math.sin(absBe) * bot.getInfo().getDistance();
 			double ty = getY() + Math.cos(absBe) * bot.getInfo().getDistance();
 			if (xLo <= tx && tx <= xHi && yLo <= ty && ty <= yHi) {
-				System.out.println("Friendly Fire! " + bot.getName());
 				gunStrategy.addToFriendlyFire(this);
+				System.out.println("Friendly Fire! " + bot.getName() + " " + gunStrategy.getFriendlyFireCount());
 				System.out.println(tx + " " + ty);
 				return true;
 			}

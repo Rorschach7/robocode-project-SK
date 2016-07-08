@@ -9,7 +9,7 @@ import robots.BaseBot;
 
 public class ChooseAggroStrategy extends TargetStrategy {
 	
-	
+	private Bot target;
 
 	@Override
 	public void execute(BaseBot robot) {
@@ -18,7 +18,7 @@ public class ChooseAggroStrategy extends TargetStrategy {
 			// Reset
 			setSkipTargeting(false);			
 		}
-		System.out.println("FIND NEW TARGET");
+		
 		// Find new target
 		// Find a target among all enemies
 		ArrayList<Bot> enemies = robot.getEnemies();
@@ -26,7 +26,7 @@ public class ChooseAggroStrategy extends TargetStrategy {
 			return;
 		}	
 		
-		Bot target = null;
+		target = null;
 		// Init or assign current target
 		for (Bot bot : enemies) {
 			if(!bot.isDead()) {
@@ -35,22 +35,10 @@ public class ChooseAggroStrategy extends TargetStrategy {
 			}
 		}
 		
-		System.out.println("TARGET " + target + " " + target.isDead());
-		
 		// Find bot with the most aggro
-		for(Bot bot : robot.getEnemies()) {
-			if(bot.isDead()) {
-				continue;
-			}
-			if(!bot.isDead()) {
-				if(bot.getAggro() > target.getAggro()) {
-					target = bot;
-				}
-			}
-		}
+		getAggroBot(robot);		
 		
-		System.out.println("AGGRO TARGET: " + target);
-		
+		// Fallback case, find closest enemy
 		if(target.getAggro() < 1.0 || target.isDead()) {	// TODO: nullptr
 			// Aggro is not convincing
 			// Find closest enemy
@@ -65,8 +53,8 @@ public class ChooseAggroStrategy extends TargetStrategy {
 			}		
 		}
 		
-		robot.setTarget(target);			
-			
+		System.out.println("INFO: new target: " + target);
+		robot.setTarget(target);		
 	}	
 	
 	
@@ -74,6 +62,9 @@ public class ChooseAggroStrategy extends TargetStrategy {
 	public void onCollision(BaseBot robot, HitRobotEvent event) {
 		// Make the robot that just rammed into as, our new target
 		//System.out.println(robot.getTarget().getName() + " " + event.getName());
+		if(robot.getTarget() == null) {
+			return;
+		}
 		if (!robot.getTarget().getName().equals(event.getName())) {
 			System.out.println("Who rammed us?");
 			//robot.setState(State.Scanning);
@@ -84,25 +75,22 @@ public class ChooseAggroStrategy extends TargetStrategy {
 	@Override
 	public void onHitByBullet(BaseBot robot, HitByBulletEvent event) {
 		// Find the enemy with the most aggro
-		Bot target = robot.getTarget();
-		for(Bot bot : robot.getEnemies()) {
-			if(bot.isDead()) {
-				continue;
-			}
-			if(!bot.isDead()) {
-				if(bot.getAggro() > target.getAggro()) {
-					target = bot;
-				}
-			}
-		}		
+		getAggroBot(robot);	
 		
 		if(!robot.getTarget().getName().equals(target.getName())) {			
 			robot.setTarget(target);
 			setSkipTargeting(true);
-			System.out.println("New Target: " + target.getName() + "Aggro: " + target.getAggro());
+			System.out.println("INFO: New Target: " + target.getName() + "Aggro: " + target.getAggro());
 		}		
 	}
 	
+	private void getAggroBot(BaseBot robot) {
+		for (Bot enemy : robot.getEnemies()) {
+			if(!enemy.isDead() && enemy.getAggro() > target.getAggro()) {
+				target = enemy;
+			}
+		}
+	}
 	
 	@Override
 	public String toString() {		

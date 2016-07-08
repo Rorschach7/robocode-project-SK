@@ -36,14 +36,19 @@ public abstract class GunStrategy {
 		friendlyFireCount++;
 		if(friendlyFireCount >= friendlyFireThreshold) {
 			friendlyFireCount = 0;
+			robot.setState(State.Evading);
+			System.out.println("INFO: Friendly Fire, new position");
 			if(repositionStrategy != null) {
-				robot.setState(State.Evading);
 			}
 		}
 	}
 
 	public int getFriendlyFireThreshold() {
 		return friendlyFireThreshold;
+	}
+	
+	public int getFriendlyFireCount() {
+		return friendlyFireCount;
 	}
 
 	public void setFriendlyFireThreshold(int friendlyFireThreshold) {

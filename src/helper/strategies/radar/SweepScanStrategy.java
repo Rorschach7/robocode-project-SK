@@ -15,8 +15,9 @@ public class SweepScanStrategy extends RadarStrategy {
 	}
 	
 	@Override
-	public boolean execute(BaseBot robot) {
-		ScannedRobotEvent target = robot.getTarget().getInfo();
+	public boolean execute(BaseBot robot) {	
+		
+		ScannedRobotEvent target = robot.getTarget().getInfo();		
 		if(target == null) {
 			return false;
 		}

@@ -33,6 +33,11 @@ public class FullSweepLockStrategy extends RadarStrategy {
 			//robot.setTarget(robot.getTargetStrategy().execute(robot));
 			
 			System.out.println("Full scan finished.");
+			
+			if(robot.getTarget().isDead()) {
+				System.out.println("WARNING. SEARCHING FOR DEAD TARGET");
+				System.out.println("MAKE SURE A VALID TARGET IS ASSIGNED");
+			} 			
 			// Sweep search for our target at last known position
 			sweepScan.attackingScan(robot);
 			radarState = RadarState.Sweep;
@@ -85,6 +90,9 @@ public class FullSweepLockStrategy extends RadarStrategy {
 	@Override
 	public boolean execute(BaseBot robot, ScannedRobotEvent e) {
 		// Sweep scan found target, lock on
+		
+		//System.out.println("TARGET: LOCK ON " + robot.getTarget());
+		
 		if (radarState == RadarState.Sweep
 				&& robot.getTarget().getName().equals(e.getName())) {
 			//System.out.println("Sweep found target, lock on");
