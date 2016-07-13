@@ -2,6 +2,7 @@ package helper.strategies.gun;
 
 import helper.Data;
 import helper.FuncLib;
+import helper.Enums.State;
 import robots.BaseBot;
 
 public class DynamicChange extends GunStrategy {
@@ -42,6 +43,11 @@ public class DynamicChange extends GunStrategy {
 				acc = robot.getHits() / (robot.getHits() + robot.getMisses()) * 100.0;
 
 				System.out.println("Current Accuracy " + acc);
+				
+				// Change position
+				if(formerAcc < 0.5 && robot.getVelocity() < 1.0) {
+					robot.setState(State.Evading);
+				}
 
 				robot.setHits(0);
 				robot.setMisses(0);

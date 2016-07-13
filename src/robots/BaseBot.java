@@ -107,7 +107,7 @@ public class BaseBot extends TeamRobot {
 		setAdjustRadarForGunTurn(true);
 
 		printStatus = false;
-		printData = false;
+		printData = false;		
 	}
 
 	/**
@@ -153,6 +153,12 @@ public class BaseBot extends TeamRobot {
 	}
 
 	public void onHitByBullet(HitByBulletEvent event) {
+		if (FuncLib.findBotByName(event.getName(), team) != null) {
+			System.out.println("Ouch, a team mate hit us!");
+			setState(State.Evading);
+			return;
+		}
+		
 		attacker = FuncLib.findBotByName(event.getName(), enemies);
 		if (attacker == null) {
 			attacker = new Bot();
@@ -413,7 +419,7 @@ public class BaseBot extends TeamRobot {
 	 */
 	public void printStatus() {
 		System.out
-				.println("---------------------------------------------------------");
+				.println("---------------------- INFO -----------------------------------");
 		if (target != null)
 			System.out.println("Target: " + target.getName() + "Aggro: "
 					+ target.getAggro());
@@ -424,7 +430,7 @@ public class BaseBot extends TeamRobot {
 		System.out.println(gunStrategy);
 		System.out.println("Dodge Strategy: " + dodgeBullet);
 		System.out
-				.println("---------------------------------------------------------");
+				.println("---------------------- END -----------------------------------");
 	}
 
 	/**
@@ -671,7 +677,7 @@ public class BaseBot extends TeamRobot {
 			double ty = getY() + Math.cos(absBe) * bot.getInfo().getDistance();
 			if (xLo <= tx && tx <= xHi && yLo <= ty && ty <= yHi) {
 				gunStrategy.addToFriendlyFire(this);
-				System.out.println("Friendly Fire! " + bot.getName() + " " + gunStrategy.getFriendlyFireCount());
+				System.out.println("Friendly Fire! " + bot.getName() + ", Count: " + gunStrategy.getFriendlyFireCount());
 				System.out.println(tx + " " + ty);
 				return true;
 			}
