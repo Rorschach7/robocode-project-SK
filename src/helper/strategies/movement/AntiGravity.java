@@ -3,9 +3,7 @@ package helper.strategies.movement;
 import helper.Bot;
 import helper.FuncLib;
 import helper.GravPoint;
-
 import java.util.ArrayList;
-
 import robots.BaseBot;
 
 public class AntiGravity extends MovementStrategy {
@@ -46,7 +44,7 @@ public class AntiGravity extends MovementStrategy {
 				double botY = (robot.getY() + Math.cos(angle)
 						* bot.getInfo().getDistance());
 
-				p = new GravPoint(botX, botY, -1000);
+				p = new GravPoint(botX, botY, -500);
 
 				force = p.power
 						/ Math.pow(FuncLib.getRange(robot.getX(), robot.getY(), p.x, p.y), 2);
@@ -70,7 +68,7 @@ public class AntiGravity extends MovementStrategy {
 		midpointcount++;
 		if (midpointcount > 5) {
 			midpointcount = 0;
-			midpointstrength = (Math.random() * 2000) - 1000;
+			midpointstrength = (Math.random() * 1000) - 500;
 		}
 		p = new GravPoint(robot.getBattleFieldWidth() / 2,
 				robot.getBattleFieldHeight() / 2, midpointstrength);
@@ -86,11 +84,11 @@ public class AntiGravity extends MovementStrategy {
 		 * decreasing at a power 3.
 		 **/
 		xforce += 5000 / Math.pow(
-				FuncLib.getRange(robot.getX(), robot.getY(), robot.getBattleFieldWidth(), robot.getY()), 3);
-		xforce -= 5000 / Math.pow(FuncLib.getRange(robot.getX(), robot.getY(), 0, robot.getY()), 3);
+				FuncLib.getRange(robot.getX(), robot.getY(), robot.getBattleFieldWidth()-40, robot.getY()), 3);
+		xforce -= 5000 / Math.pow(FuncLib.getRange(robot.getX(), robot.getY(), 20, robot.getY()), 3);
 		yforce += 5000 / Math.pow(
-				FuncLib.getRange(robot.getX(), robot.getY(), robot.getX(), robot.getBattleFieldHeight()), 3);
-		yforce -= 5000 / Math.pow(FuncLib.getRange(robot.getX(), robot.getY(), robot.getX(), 0), 3);
+				FuncLib.getRange(robot.getX(), robot.getY(), robot.getX(), robot.getBattleFieldHeight()-40), 3);
+		yforce -= 5000 / Math.pow(FuncLib.getRange(robot.getX(), robot.getY(), robot.getX(), 20), 3);
 
 		// Move in the direction of our resolved force.
 		robot.goTo(robot.getX() - xforce, robot.getY() - yforce);
