@@ -27,7 +27,7 @@ public class RandomMovement extends MovementStrategy {
 					.distance(randPoint) < 10 || evadeRounds < 0) {
 				isEvading = false;
 				robot.setState(State.Attacking);
-				//System.out.println("reached point");
+				// System.out.println("reached point");
 			}
 		} else {
 			// System.out.println("Start randomMovement");
@@ -46,9 +46,13 @@ public class RandomMovement extends MovementStrategy {
 		ScannedRobotEvent bot = robot.getTarget().getInfo();
 		double botBearing = bot.getBearing();
 		double heading = robot.getHeading();
-		Rectangle field = new Rectangle(new Point(20, 20), new Dimension(
-				(int) robot.getBattleFieldWidth() - 40,
-				(int) robot.getBattleFieldHeight() - 40));
+		Rectangle field = new Rectangle(
+				new Point(20 + robot.getSentryBorderSize(),
+						+robot.getSentryBorderSize()), new Dimension(
+						(int) robot.getBattleFieldWidth() - 40
+								- robot.getSentryBorderSize(),
+						(int) robot.getBattleFieldHeight() - 40
+								- robot.getSentryBorderSize()));
 
 		// TODO: change deltaAngle according to the distance to the enemy
 		double deltaAngle = 100;
@@ -83,18 +87,18 @@ public class RandomMovement extends MovementStrategy {
 		int counter = 0;
 		do {
 			// to prevent infinity loop if bot is pushed in an edge;
-			if(counter >= 100){
+			if (counter >= 100) {
 				deltaAngle -= 10;
 				counter = 0;
 			}
-			
+
 			randAngle = rand.nextDouble() * 360;
 
 			double randAngTotal = (randAngle + heading + botBearing - deltaAngle / 2) % 360;
 			if (randAngTotal < 0) {
 				randAngTotal += 360;
 			}
-			
+
 			// calculate the target coordinates to move according to the random
 			// angle
 			double tx = robot.getX() + dist
@@ -107,17 +111,17 @@ public class RandomMovement extends MovementStrategy {
 			for (Bot teamBot : team) {
 				int teamBotX = (int) teamBot.getPosX();
 				int teamBotY = (int) teamBot.getPosY();
-				Rectangle botField = new Rectangle(
-						new Point(teamBotX - teamBotArea, teamBotY - teamBotArea),
-						new Dimension(teamBotX + teamBotArea, teamBotY + teamBotArea));
+				Rectangle botField = new Rectangle(new Point(teamBotX
+						- teamBotArea, teamBotY - teamBotArea), new Dimension(
+						teamBotX + teamBotArea, teamBotY + teamBotArea));
 				if (botField.contains(target)) {
 					closeToTeamMember = true;
 				} else {
 					closeToTeamMember = false;
 				}
-			}			
+			}
 
-			counter ++;
+			counter++;
 		} while (randAngle > 0 && randAngle < deltaAngle || randAngle > 180
 				&& randAngle < 180 + deltaAngle || !field.contains(target)
 				|| closeToTeamMember);

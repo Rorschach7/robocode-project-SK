@@ -7,10 +7,9 @@ import java.util.ArrayList;
 import robots.BaseBot;
 
 public class AntiGravity extends MovementStrategy {
-	
+
 	private int midpointcount = 0; // Number of turns since that strength was
-	private double midpointstrength = 0; // The strength of the gravity point in	
-	
+	private double midpointstrength = 0; // The strength of the gravity point in
 
 	@Override
 	public void execute(BaseBot robot) {
@@ -47,7 +46,8 @@ public class AntiGravity extends MovementStrategy {
 				p = new GravPoint(botX, botY, -500);
 
 				force = p.power
-						/ Math.pow(FuncLib.getRange(robot.getX(), robot.getY(), p.x, p.y), 2);
+						/ Math.pow(FuncLib.getRange(robot.getX(), robot.getY(),
+								p.x, p.y), 2);
 
 				// Find the bearing from the point to us
 				ang = FuncLib.normaliseBearing(Math.PI / 2
@@ -72,7 +72,10 @@ public class AntiGravity extends MovementStrategy {
 		}
 		p = new GravPoint(robot.getBattleFieldWidth() / 2,
 				robot.getBattleFieldHeight() / 2, midpointstrength);
-		force = p.power / Math.pow(FuncLib.getRange(robot.getX(), robot.getY(), p.x, p.y), 1.5);
+		force = p.power
+				/ Math.pow(
+						FuncLib.getRange(robot.getX(), robot.getY(), p.x, p.y),
+						1.5);
 		ang = FuncLib.normaliseBearing(Math.PI / 2
 				- Math.atan2(robot.getY() - p.y, robot.getX() - p.x));
 		xforce += Math.sin(ang) * force;
@@ -83,12 +86,24 @@ public class AntiGravity extends MovementStrategy {
 		 * if the bot is close to the walls due to the force from the walls
 		 * decreasing at a power 3.
 		 **/
-		xforce += 5000 / Math.pow(
-				FuncLib.getRange(robot.getX(), robot.getY(), robot.getBattleFieldWidth()-40, robot.getY()), 3);
-		xforce -= 5000 / Math.pow(FuncLib.getRange(robot.getX(), robot.getY(), 20, robot.getY()), 3);
+		xforce += 5000 / Math
+				.pow(FuncLib.getRange(
+						robot.getX(),
+						robot.getY(),
+						robot.getBattleFieldWidth() - 40
+								- robot.getSentryBorderSize(), robot.getY()), 3);
+		xforce -= 5000 / Math.pow(
+				FuncLib.getRange(robot.getX(), robot.getY(),
+						20 + robot.getSentryBorderSize(), robot.getY()), 3);
 		yforce += 5000 / Math.pow(
-				FuncLib.getRange(robot.getX(), robot.getY(), robot.getX(), robot.getBattleFieldHeight()-40), 3);
-		yforce -= 5000 / Math.pow(FuncLib.getRange(robot.getX(), robot.getY(), robot.getX(), 20), 3);
+				FuncLib.getRange(
+						robot.getX(),
+						robot.getY(),
+						robot.getX(),
+						robot.getBattleFieldHeight() - 40
+								- robot.getSentryBorderSize()), 3);
+		yforce -= 5000 / Math.pow(FuncLib.getRange(robot.getX(), robot.getY(),
+				robot.getX(), 20 + robot.getSentryBorderSize()), 3);
 
 		// Move in the direction of our resolved force.
 		robot.goTo(robot.getX() - xforce, robot.getY() - yforce);

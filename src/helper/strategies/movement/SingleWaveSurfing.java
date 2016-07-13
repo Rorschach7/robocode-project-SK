@@ -20,8 +20,10 @@ public class SingleWaveSurfing extends MovementStrategy {
 	public ArrayList<Double> _surfAbsBearings = new ArrayList<Double>();
 	private BaseBot robot;
 
-	public static Rectangle2D.Double _fieldRect = new java.awt.geom.Rectangle2D.Double(
-			18, 18, 764, 564);
+	public Rectangle2D.Double _fieldRect = new java.awt.geom.Rectangle2D.Double(
+			20 + robot.getSentryBorderSize(), 20 + robot.getSentryBorderSize(),
+			760 - robot.getSentryBorderSize(),
+			560 - robot.getSentryBorderSize());
 	public static double WALL_STICK = 160;
 
 	@Override
@@ -84,11 +86,12 @@ public class SingleWaveSurfing extends MovementStrategy {
 
 		return _surfStats[index];
 	}
-	
+
 	// Given the EnemyWave that the bullet was on, and the point where we
 	// were hit, calculate the index into our stat array for that factor.
 	public static int getFactorIndex(EnemyWave ew, Point2D.Double targetLocation) {
-		double offsetAngle = (FuncLib.absoluteBearing(ew.getFireLocation(), targetLocation) - ew.getDirectAngle());
+		double offsetAngle = (FuncLib.absoluteBearing(ew.getFireLocation(),
+				targetLocation) - ew.getDirectAngle());
 		double factor = Utils.normalRelativeAngle(offsetAngle)
 				/ maxEscapeAngle(ew.getBulletVelocity()) * ew.getDirection();
 
@@ -106,7 +109,7 @@ public class SingleWaveSurfing extends MovementStrategy {
 		}
 		return angle;
 	}
-	
+
 	// CREDIT: mini sized predictor from Apollon, by rozu
 	// http://robowiki.net?Apollon
 	public Point2D.Double predictPosition(EnemyWave surfWave, int direction) {
@@ -119,9 +122,11 @@ public class SingleWaveSurfing extends MovementStrategy {
 		boolean intercepted = false;
 
 		do {
-			moveAngle = wallSmoothing(predictedPosition,
-					FuncLib.absoluteBearing(surfWave.getFireLocation(), predictedPosition)
-							+ (direction * (Math.PI / 2)), direction)
+			moveAngle = wallSmoothing(
+					predictedPosition,
+					FuncLib.absoluteBearing(surfWave.getFireLocation(),
+							predictedPosition) + (direction * (Math.PI / 2)),
+					direction)
 					- predictedHeading;
 			moveDir = 1;
 
@@ -152,7 +157,8 @@ public class SingleWaveSurfing extends MovementStrategy {
 
 			counter++;
 
-			if (predictedPosition.distance(surfWave.getFireLocation()) < surfWave.getDistanceTraveled()
+			if (predictedPosition.distance(surfWave.getFireLocation()) < surfWave
+					.getDistanceTraveled()
 					+ (counter * surfWave.getBulletVelocity())
 					+ surfWave.getBulletVelocity()) {
 				intercepted = true;
@@ -172,7 +178,8 @@ public class SingleWaveSurfing extends MovementStrategy {
 		double dangerLeft = checkDanger(surfWave, -1);
 		double dangerRight = checkDanger(surfWave, 1);
 
-		double goAngle = FuncLib.absoluteBearing(surfWave.getFireLocation(), _myLocation);
+		double goAngle = FuncLib.absoluteBearing(surfWave.getFireLocation(),
+				_myLocation);
 		if (dangerLeft < dangerRight) {
 			goAngle = wallSmoothing(_myLocation, goAngle - (Math.PI / 2), -1);
 		} else {
@@ -181,7 +188,7 @@ public class SingleWaveSurfing extends MovementStrategy {
 
 		setBackAsFront(goAngle, robot);
 	}
-	
+
 	private EnemyWave getClosestSurfableWave() {
 		double closestDistance = 50000; // I juse use some very big number here
 		EnemyWave surfWave = null;
