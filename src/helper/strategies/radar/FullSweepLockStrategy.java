@@ -31,8 +31,9 @@ public class FullSweepLockStrategy extends RadarStrategy {
 		if (!fullScan.getScanning() && radarState == RadarState.FullScan) {			
 			// Find target			
 			//robot.setTarget(robot.getTargetStrategy().execute(robot));
-			
-			System.out.println("Full scan finished.");
+			if(BaseBot.DEBUG_MODE) {								
+				System.out.println("Full scan finished.");
+			}
 			
 			if(robot.getTarget().isDead()) {
 				System.out.println("WARNING. SEARCHING FOR DEAD TARGET");
@@ -71,7 +72,9 @@ public class FullSweepLockStrategy extends RadarStrategy {
 		count++;
 		
 		if(count >= interval) {
-			System.out.println("perform periodic scan");
+			if(BaseBot.DEBUG_MODE) {								
+				System.out.println("perform periodic scan");
+			}
 			
 			radarState = RadarState.FullScan;
 			if(!fullScan.execute(robot)) {

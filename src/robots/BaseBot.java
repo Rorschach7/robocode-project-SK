@@ -23,6 +23,8 @@ import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
 public class BaseBot extends TeamRobot {
+	
+	public static boolean DEBUG_MODE = true;
 
 	// Variables
 	protected int nr; // number to identify in team
@@ -154,7 +156,9 @@ public class BaseBot extends TeamRobot {
 
 	public void onHitByBullet(HitByBulletEvent event) {
 		if (FuncLib.findBotByName(event.getName(), team) != null) {
-			System.out.println("Ouch, a team mate hit us!");
+			if(DEBUG_MODE) {
+				System.out.println("Ouch, a team mate hit us!");				
+			}
 			setState(State.Evading);
 			return;
 		}
@@ -171,12 +175,12 @@ public class BaseBot extends TeamRobot {
 		hitsTaken++;
 	}
 
-	public void onHitRobot(HitRobotEvent event) {
-		// System.out.println("Robot collision!");
+	public void onHitRobot(HitRobotEvent event) {	
 
 		if (FuncLib.findBotByName(event.getName(), team) != null) {
-			System.out
-					.println("We collided with a team mate. That should not have happened.");
+			if(DEBUG_MODE) {
+				System.out.println("We collided with a team mate. That should not have happened.");
+			}
 			return;
 		}
 
@@ -188,14 +192,17 @@ public class BaseBot extends TeamRobot {
 	}
 
 	public void onRobotDeath(RobotDeathEvent event) {
-		
-		System.out.println("INFO: " + event.getName() + " died");
+		if(DEBUG_MODE) {
+			System.out.println("INFO: " + event.getName() + " died");
+		}
 		
 		for (Bot bot : team) {
 			if (event.getName().equals(bot.getName())) {
 				bot.died();
 				team.remove(bot);
-				System.out.println("Team mate died :(");
+				if(DEBUG_MODE) {
+					System.out.println("Team mate died :(");
+				}
 				return;
 			}
 		}
@@ -217,7 +224,9 @@ public class BaseBot extends TeamRobot {
 
 	public void onHitWall(HitWallEvent event) {
 		// Should never happen
-		System.out.println("We crashed into a wall. How could that happen? :(");
+		if(DEBUG_MODE) {
+			System.out.println("We crashed into a wall. How could that happen? :(");
+		}
 	}
 
 	public void onBulletMissed(BulletMissedEvent event) {
@@ -227,7 +236,7 @@ public class BaseBot extends TeamRobot {
 	}
 
 	public void onWin(WinEvent event) {
-		System.out.println("WINEVENT");
+		System.out.println("INFO: WINEVENT");
 	}
 
 	public void onBulletHit(BulletHitEvent event) {
@@ -241,7 +250,7 @@ public class BaseBot extends TeamRobot {
 		for (Data data : dataList) {
 			data.lost();
 		}
-		System.out.println("DEFEAT");
+		System.out.println("INFO: DEFEAT");
 
 		if (getTeammates() == null) {
 			saveData();
@@ -250,7 +259,7 @@ public class BaseBot extends TeamRobot {
 	}
 
 	public void onRoundEnded(RoundEndedEvent event) {
-		System.out.println("Round ended");
+		System.out.println("INFO: Round ended");
 
 		if (getEnergy() > 0) {
 			for (Data data : dataList) {
@@ -259,11 +268,11 @@ public class BaseBot extends TeamRobot {
 					data.printData(true);					
 				}
 			}
-			System.out.println("VICTORY");
+			System.out.println("INFO: VICTORY");
 			victoryDance.execute(this);
 		}
 
-		System.out.println(getGunStrategy() + " acc: "
+		System.out.println("INFO: " + getGunStrategy() + " acc: "
 				+ getGunStrategy().getAccuracy(this));
 
 		gameOver = true;
@@ -299,7 +308,9 @@ public class BaseBot extends TeamRobot {
 		String info = msg.substring(ind + 1);
 
 		if (start.equals("ALIVE")) {
-			System.out.println(info + " is alive.");
+			if(DEBUG_MODE) {
+				System.out.println(info + " is alive.");
+			}
 			for (Bot bot : team) {
 				if (bot.getName().equals(info)) {
 					bot.died();
@@ -327,9 +338,11 @@ public class BaseBot extends TeamRobot {
 				}
 			}
 			if (team.isEmpty() && bestScore) {
-				System.out.println("I have the best score " + score + " "
-						+ getName());
-				saveData();
+				if(DEBUG_MODE) {
+					System.out.println("I have the best score " + score + " "
+							+ getName());
+					saveData();
+				}
 			}
 		}
 
@@ -490,8 +503,7 @@ public class BaseBot extends TeamRobot {
 			// Clean up name
 			if (robot.getName().contains(" ")) {
 				int i = robot.getName().indexOf(" ");
-				robotName = robot.getName().substring(0, i);
-				// System.out.println("Multiple Instances: " + robotName);
+				robotName = robot.getName().substring(0, i);				
 			}
 
 			// Check if we already added this kind of robot
@@ -499,8 +511,9 @@ public class BaseBot extends TeamRobot {
 				if (data.getRobotName().equals(robotName)) {
 					// A data object for this kind of robot already exists,
 					// abort
-					System.out
-							.println("A data object for this kind of robot already exists, abort");
+					if(DEBUG_MODE) {
+						System.out.println("A data object for this kind of robot already exists, abort");
+					}
 					return;
 				}
 			}
@@ -510,19 +523,26 @@ public class BaseBot extends TeamRobot {
 
 			if (checkForData(robotName)) {
 				// A data file already exists, so load it
-				System.out.println("Load File.");
+				if(DEBUG_MODE) {
+					System.out.println("Load File.");
+				}
 				data = loadData(robotName);
 
 				if (data == null) {
-					System.out
-							.println("File was not found, create new data file");
+					if(DEBUG_MODE) {
+						System.out.println("File was not found, create new data file");
+					}
 					dataList.add(new Data(robotName));
 					return;
 				}
 				dataList.add(data);
-				System.out.println("Added " + data + " to DataList.");
+				if(DEBUG_MODE) {
+					System.out.println("Added " + data + " to DataList.");
+				}
 			} else {
-				System.out.println("No File found.");
+				if(DEBUG_MODE) {
+					System.out.println("No File found.");
+				}
 				data = new Data(robotName);
 				dataList.add(data);
 			}
@@ -565,8 +585,9 @@ public class BaseBot extends TeamRobot {
 	 * @return The loaded data object or null.
 	 */
 	private Data loadData(String robotName) {
-
-		System.out.println("Trying to load " + robotName + ".json");
+		if(DEBUG_MODE) {
+			System.out.println("Trying to load " + robotName + ".json");
+		}
 
 		File file = getDataFile(robotName + ".json");
 
@@ -576,7 +597,7 @@ public class BaseBot extends TeamRobot {
 			// System.out.println("IN JSON");
 			return gson.fromJson(new FileReader(file), Data.class);
 		} catch (JsonSyntaxException | JsonIOException | FileNotFoundException e) {
-			System.out.println("Error while converting from Json");
+			System.out.println("ERROR: while converting from Json");
 			e.printStackTrace();
 		}
 
@@ -584,8 +605,10 @@ public class BaseBot extends TeamRobot {
 	}
 
 	private void saveData() {
-
-		System.out.println("Saving Data " + dataList.size());
+		
+		if(DEBUG_MODE) {
+			System.out.println("Saving Data " + dataList.size());
+		}
 
 		Gson gson = new Gson();
 
@@ -605,7 +628,9 @@ public class BaseBot extends TeamRobot {
 				RobocodeFileWriter writer = new RobocodeFileWriter(file);
 				writer.write(dataString);
 				writer.close();
-				System.out.println("Data saved to " + file.getAbsolutePath());
+				if(DEBUG_MODE) {
+					System.out.println("Data saved to " + file.getAbsolutePath());
+				}
 			} catch (JsonIOException | IOException e) {
 				e.printStackTrace();
 			}
@@ -621,7 +646,9 @@ public class BaseBot extends TeamRobot {
 		if (name.contains(" ")) {
 			int i = name.indexOf(" ");
 			robotName = name.substring(0, i);
-			System.out.println("Multiple Instances: " + robotName);
+			if(DEBUG_MODE) {
+				System.out.println("Multiple Instances: " + robotName);
+			}
 		}
 
 		File file = getDataFile(robotName + ".json");
@@ -677,6 +704,7 @@ public class BaseBot extends TeamRobot {
 			double ty = getY() + Math.cos(absBe) * bot.getInfo().getDistance();
 			if (xLo <= tx && tx <= xHi && yLo <= ty && ty <= yHi) {
 				gunStrategy.addToFriendlyFire(this);
+				//TODO:
 				System.out.println("Friendly Fire! " + bot.getName() + ", Count: " + gunStrategy.getFriendlyFireCount());
 				System.out.println(tx + " " + ty);
 				return true;
@@ -736,7 +764,6 @@ public class BaseBot extends TeamRobot {
 	public void setState(State state) {
 		// Execute find target algorithm
 		if (state == State.Attacking) {
-			System.out.println("EXECUTE TARGET STARTEGY");
 			targetStrategy.execute(this);
 		}
 		this.state = state;

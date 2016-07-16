@@ -41,8 +41,8 @@ public class DynamicChange extends GunStrategy {
 			if(count >= interval) {
 				formerAcc = acc;
 				acc = robot.getHits() / (robot.getHits() + robot.getMisses()) * 100.0;
-
-				System.out.println("Current Accuracy " + acc);
+				
+				System.out.println("INFO: Current Accuracy " + acc);
 				
 				// Change position
 				if(formerAcc < 0.5 && robot.getVelocity() < 1.0) {
@@ -60,8 +60,9 @@ public class DynamicChange extends GunStrategy {
 				
 				if(strategy instanceof LinTargeting) {					
 					strategy = guessTargeting;
+					System.out.println("INFO: Switch to guess targeting.");
 				} else {
-					System.out.println("Switch to lin");
+					System.out.println("INFO: Switch to linear targeting.");
 					strategy = linTargeting;
 				}				
 			}

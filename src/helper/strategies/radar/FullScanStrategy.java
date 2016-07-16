@@ -32,14 +32,18 @@ public class FullScanStrategy extends RadarStrategy {
 	 */
 	public boolean execute(BaseBot robot) {
 		if (!scanning) {
-			// make a short scan of the whole battlefield			
-			System.out.println("Executing Scan");
+			// make a short scan of the whole battlefield
+			if(BaseBot.DEBUG_MODE) {								
+				System.out.println("Executing Scan");
+			}
 			robot.setTurnRadarRight(360);
 			scanning = true;
 			return false;
 		} else if (robot.getRadarTurnRemaining() < 10) {
 			// Scan finished
-			System.out.println("Scan finished");
+			if(BaseBot.DEBUG_MODE) {								
+				System.out.println("Scan finished");
+			}
 			scanning = false;
 			return true;
 		}

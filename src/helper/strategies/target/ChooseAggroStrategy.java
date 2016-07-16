@@ -66,8 +66,9 @@ public class ChooseAggroStrategy extends TargetStrategy {
 			return;
 		}
 		if (!robot.getTarget().getName().equals(event.getName())) {
-			System.out.println("Who rammed us?");
-			//robot.setState(State.Scanning);
+			if(BaseBot.DEBUG_MODE) {								
+				System.out.println("Find out who rammed us?");
+			}			
 			robot.setTarget(FuncLib.findBotByName(event.getName(), robot.getEnemies()));
 		}
 	}

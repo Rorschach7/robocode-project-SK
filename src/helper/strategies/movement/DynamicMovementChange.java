@@ -47,7 +47,9 @@ public class DynamicMovementChange extends MovementStrategy {
 				}
 				
 				successRate = (robot.getEnemyBulletsDetected() - robot.getHitsTaken()) / robot.getEnemyBulletsDetected() * 100;
-				System.out.println("current success rate: " + successRate + " bullets detected: " + robot.getEnemyBulletsDetected() + " hits Taken: " + robot.getHitsTaken());
+				if(BaseBot.DEBUG_MODE) {								
+					System.out.println("current success rate: " + successRate + " bullets detected: " + robot.getEnemyBulletsDetected() + " hits Taken: " + robot.getHitsTaken());
+				}
 				
 				count = 0;
 				robot.setEnemyBulletsDetected(0);
@@ -61,10 +63,14 @@ public class DynamicMovementChange extends MovementStrategy {
 				}
 				
 				if(strategy instanceof RandomMovement){
-					System.out.println("switch to surfing");					
+					if(BaseBot.DEBUG_MODE) {								
+						System.out.println("switch to surfing");					
+					}
 					strategy = singleWaveSurfing;
 				}else{
-					System.out.println("switch to rand");
+					if(BaseBot.DEBUG_MODE) {								
+						System.out.println("switch to rand");
+					}
 					strategy = randomMovement;
 				}				
 			}
