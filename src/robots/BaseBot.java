@@ -24,7 +24,7 @@ import com.google.gson.JsonSyntaxException;
 
 public class BaseBot extends TeamRobot {
 	
-	public static boolean DEBUG_MODE = true;
+	public static boolean DEBUG_MODE = false;
 
 	// Variables
 	protected int nr; // number to identify in team
@@ -380,10 +380,7 @@ public class BaseBot extends TeamRobot {
 		if (periodicScan) {
 			radarStrategy.periodicScan(this);
 		}
-
-		// Find Target
-		// targetStrategy.execute(this);
-
+		
 		// Execute behavior for corresponding state
 		if (getState() == State.Attacking) {
 			
@@ -762,8 +759,11 @@ public class BaseBot extends TeamRobot {
 	}
 
 	public void setState(State state) {
+		if(DEBUG_MODE) {			
+			System.out.println("STATE CHANGE TO " + state);
+		}
 		// Execute find target algorithm
-		if (state == State.Attacking) {
+		if (state == State.Attacking && this.state == State.Scanning) {
 			targetStrategy.execute(this);
 		}
 		this.state = state;

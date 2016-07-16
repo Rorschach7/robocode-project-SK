@@ -20,14 +20,17 @@ public class SingleWaveSurfing extends MovementStrategy {
 	public ArrayList<Double> _surfAbsBearings = new ArrayList<Double>();
 	private BaseBot robot;
 
-	public Rectangle2D.Double _fieldRect = new java.awt.geom.Rectangle2D.Double(
-			20 + robot.getSentryBorderSize(), 20 + robot.getSentryBorderSize(),
-			760 - robot.getSentryBorderSize(),
-			560 - robot.getSentryBorderSize());
+	public Rectangle2D.Double _fieldRect;
 	public static double WALL_STICK = 160;
 
 	@Override
 	public void execute(BaseBot robot) {
+		if(_fieldRect == null) {
+			_fieldRect = new java.awt.geom.Rectangle2D.Double(
+					20 + robot.getSentryBorderSize(), 20 + robot.getSentryBorderSize(),
+					760 - robot.getSentryBorderSize(),
+					560 - robot.getSentryBorderSize());
+		}
 		robot.setMaxVelocity(8);
 	}
 
