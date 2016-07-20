@@ -224,9 +224,7 @@ public class BaseBot extends TeamRobot {
 
 	public void onHitWall(HitWallEvent event) {
 		// Should never happen
-		if(DEBUG_MODE) {
-			System.out.println("We crashed into a wall. How could that happen? :(");
-		}
+		System.out.println("INFO: Crashed into wall.");	
 	}
 
 	public void onBulletMissed(BulletMissedEvent event) {
