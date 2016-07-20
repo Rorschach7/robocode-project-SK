@@ -5,6 +5,7 @@ import java.awt.Color;
 import helper.strategies.gun.DynamicChange;
 import helper.strategies.movement.RandomMovement;
 import helper.strategies.movement.SpinAroundMovement;
+import helper.strategies.movement.StopMovement;
 
 public class Meteor extends BaseBot {
 	
@@ -21,6 +22,8 @@ public class Meteor extends BaseBot {
 		// Strategies
 		gunStrategy = new DynamicChange();		
 		dodgeBullet = new RandomMovement(); 
+		scanningMovement = new StopMovement();
+		attackingMovement = new StopMovement();
 		victoryDance = new SpinAroundMovement();
 		
 		printStatus = false;
