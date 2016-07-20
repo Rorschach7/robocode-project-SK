@@ -592,6 +592,7 @@ public class BaseBot extends TeamRobot {
 
 		try {
 			// System.out.println("IN JSON");
+			System.out.println("INFO: loading data: " + robotName + ".json");
 			return gson.fromJson(new FileReader(file), Data.class);
 		} catch (JsonSyntaxException | JsonIOException | FileNotFoundException e) {
 			System.out.println("ERROR: while converting from Json");
