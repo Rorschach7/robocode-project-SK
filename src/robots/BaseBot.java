@@ -120,6 +120,7 @@ public class BaseBot extends TeamRobot {
 	 */
 	public void goTo(double x, double y) {
 		setMaxVelocity(Rules.MAX_VELOCITY);
+//		double dist = FuncLib.getRange(this.getX(), this.getY(), x, y);
 		double dist = 20;
 		double angle = Math.toDegrees(FuncLib.absBearing(getX(), getY(), x, y));
 		turnTo(angle);

@@ -57,11 +57,11 @@ public class RandomMovement extends MovementStrategy {
 		int teamBotArea = 60;
 
 		ArrayList<Bot> allBots = new ArrayList<Bot>();
-		
-		for(Bot eBot : robot.getEnemies()){
+
+		for (Bot eBot : robot.getEnemies()) {
 			allBots.add(eBot);
 		}
-		for(Bot tBot : robot.getTeam()){
+		for (Bot tBot : robot.getTeam()) {
 			allBots.add(tBot);
 		}
 
@@ -114,19 +114,20 @@ public class RandomMovement extends MovementStrategy {
 					* Math.cos(Math.toRadians(randAngTotal));
 			target.setLocation(tx, ty);
 
-			// prevent to move into a team mate
-			
-			
+			// prevent to move into other bots
 			for (Bot aBot : allBots) {
-				int teamBotX = (int) aBot.getPosX();
-				int teamBotY = (int) aBot.getPosY();
-				Rectangle botField = new Rectangle(new Point(teamBotX
-						- teamBotArea, teamBotY - teamBotArea), new Dimension(
-						teamBotX + teamBotArea, teamBotY + teamBotArea));
-				if (botField.contains(target)) {
-					closeToTeamMember = true;
-				} else {
-					closeToTeamMember = false;
+				if (!aBot.isDead()) {
+					int teamBotX = (int) aBot.getPosX();
+					int teamBotY = (int) aBot.getPosY();
+					Rectangle botField = new Rectangle(new Point(teamBotX
+							- teamBotArea, teamBotY - teamBotArea),
+							new Dimension(teamBotX + teamBotArea, teamBotY
+									+ teamBotArea));
+					if (botField.contains(target)) {
+						closeToTeamMember = true;
+					} else {
+						closeToTeamMember = false;
+					}
 				}
 			}
 
