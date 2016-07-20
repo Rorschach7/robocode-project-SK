@@ -176,9 +176,11 @@ public class BaseBot extends TeamRobot {
 		hitsTaken++;
 	}
 
-	public void onHitRobot(HitRobotEvent event) {	
+	public void onHitRobot(HitRobotEvent event) {
+		
 
 		if (FuncLib.findBotByName(event.getName(), team) != null) {
+			moveDirection *= -1;
 			if(DEBUG_MODE) {
 				System.out.println("We collided with a team mate. That should not have happened.");
 			}

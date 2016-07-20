@@ -7,7 +7,7 @@ import robots.BaseBot;
 
 public abstract class GunStrategy {
 	
-	private int friendlyFireThreshold = 5;
+	private int friendlyFireThreshold = 2;
 	protected int friendlyFireCount;
 	protected MovementStrategy repositionStrategy;
 	
