@@ -46,6 +46,7 @@ public class DynamicChange extends GunStrategy {
 				
 				// Change position
 				if(formerAcc < 0.5 && robot.getVelocity() < 1.0) {
+					System.out.println("INFO: bad accuracy, changing position.");
 					robot.setState(State.Evading);
 				}
 
