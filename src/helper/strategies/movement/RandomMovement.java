@@ -91,11 +91,17 @@ public class RandomMovement extends MovementStrategy {
 		// gives a random angle which is not to the enemy or the opposite
 		// direction
 		int counter = 0;
+		int emergencyCounter = 0;
+		System.out.println("RAND MOV: enter while");
 		do {
 			// to prevent infinity loop if bot is pushed in an edge;
-			if (counter >= 100) {
-				deltaAngle -= 10;
-				teamBotArea -= 5;
+			if(emergencyCounter >= 500){
+				System.out.println("emergency break");
+				break;
+			}
+			if (counter >= 50) {
+				if(deltaAngle > 0) deltaAngle -= 10;
+				if(teamBotArea > 0) teamBotArea -= 5;
 				counter = 0;
 			}
 
@@ -132,9 +138,12 @@ public class RandomMovement extends MovementStrategy {
 			}
 
 			counter++;
+			emergencyCounter++;
 		} while (randAngle > 0 && randAngle < deltaAngle || randAngle > 180
-				&& randAngle < 180 + deltaAngle || !field.contains(target)
+				&& randAngle <= 180 + deltaAngle || !field.contains(target)
 				|| closeToTeamMember);
+		
+		System.out.println("RAND MOV: exit while");
 
 		return target;
 	}

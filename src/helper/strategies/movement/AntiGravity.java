@@ -4,6 +4,7 @@ import helper.Bot;
 import helper.FuncLib;
 import helper.GravPoint;
 import java.util.ArrayList;
+import java.util.Collections;
 import robots.BaseBot;
 
 public class AntiGravity extends MovementStrategy {
@@ -20,7 +21,6 @@ public class AntiGravity extends MovementStrategy {
 		double ang;
 		GravPoint p;
 		ArrayList<Bot> allBots = new ArrayList<Bot>();
-//		Collections.copy(allBots, robot.getEnemies());
 		for (Bot bot : robot.getTeam()) {
 			if (!bot.equals(this)) {
 				allBots.add(bot);
@@ -31,9 +31,9 @@ public class AntiGravity extends MovementStrategy {
 				allBots.add(bot);
 			}
 		}
+		
 		// cycle through all bots. If they are alive, they are repulsive.
 		// Calculate the force on us
-
 		for (Bot bot : allBots) {
 			if (!bot.isDead()) {
 
@@ -68,9 +68,8 @@ public class AntiGravity extends MovementStrategy {
 		/**
 		 * The next section adds a middle point with a random (positive or
 		 * negative) strength. The strength changes every 5 turns, and goes
-		 * between -1000 and 1000. This gives a better overall movement.
+		 * between -500 and 500. This gives a better overall movement.
 		 **/
-
 		midpointcount++;
 		if (midpointcount > 5) {
 			midpointcount = 0;
