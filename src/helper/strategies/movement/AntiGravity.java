@@ -4,6 +4,7 @@ import helper.Bot;
 import helper.FuncLib;
 import helper.GravPoint;
 import java.util.ArrayList;
+import java.util.Collections;
 import robots.BaseBot;
 
 public class AntiGravity extends MovementStrategy {
@@ -19,8 +20,14 @@ public class AntiGravity extends MovementStrategy {
 		double force;
 		double ang;
 		GravPoint p;
-		ArrayList<Bot> allBots = robot.getEnemies();
+		ArrayList<Bot> allBots = new ArrayList<Bot>();
+//		Collections.copy(allBots, robot.getEnemies());
 		for (Bot bot : robot.getTeam()) {
+			if (!bot.equals(this)) {
+				allBots.add(bot);
+			}
+		}
+		for (Bot bot : robot.getEnemies()) {
 			if (!bot.equals(this)) {
 				allBots.add(bot);
 			}

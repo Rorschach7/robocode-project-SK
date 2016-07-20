@@ -1,5 +1,6 @@
 package helper.strategies.radar;
 
+import helper.Enums.State;
 import robocode.ScannedRobotEvent;
 import robots.BaseBot;
 
@@ -103,7 +104,10 @@ public class FullSweepLockStrategy extends RadarStrategy {
 			isEnemyLocked = true;
 		}
 
-		if (radarState == RadarState.Lock) {			
+		if (radarState == RadarState.Lock) {
+			if(robot.getTarget() == null){
+				robot.setState(State.Scanning);
+			}
 			if (robot.getTarget().getName().equals(e.getName())) {
 				isEnemyLocked = true;
 				lockScan.execute(robot);

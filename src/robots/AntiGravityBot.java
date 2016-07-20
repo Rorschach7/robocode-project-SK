@@ -4,6 +4,7 @@ import helper.strategies.gun.DynamicChange;
 import helper.strategies.movement.AntiGravity;
 import helper.strategies.movement.RandomMovement;
 import helper.strategies.movement.SpinAroundMovement;
+import helper.strategies.movement.StopMovement;
 
 import java.awt.Color;
 
@@ -21,7 +22,7 @@ public class AntiGravityBot extends BaseBot {
 		// Strategies
 		gunStrategy = new DynamicChange();
 		attackingMovement = new AntiGravity();
-		scanningMovement = new AntiGravity();
+		scanningMovement = new StopMovement();
 		dodgeBullet = new RandomMovement();
 		victoryDance = new SpinAroundMovement();
 

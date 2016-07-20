@@ -15,7 +15,6 @@ public class RandomMovement extends MovementStrategy {
 	private boolean isEvading;
 	private Point randPoint;
 	private double evadeRounds;
-	private int teamBotArea = 60;
 
 	@Override
 	public void execute(BaseBot robot) {
@@ -54,10 +53,17 @@ public class RandomMovement extends MovementStrategy {
 						(int) robot.getBattleFieldHeight() - 40
 								- robot.getSentryBorderSize()));
 
-		// TODO: change deltaAngle according to the distance to the enemy
 		double deltaAngle = 100;
+		int teamBotArea = 60;
 
-		ArrayList<Bot> team = robot.getTeam();
+		ArrayList<Bot> allBots = new ArrayList<Bot>();
+		
+		for(Bot eBot : robot.getEnemies()){
+			allBots.add(eBot);
+		}
+		for(Bot tBot : robot.getTeam()){
+			allBots.add(tBot);
+		}
 
 		Random rand = new Random();
 		Point target = new Point();
@@ -89,6 +95,7 @@ public class RandomMovement extends MovementStrategy {
 			// to prevent infinity loop if bot is pushed in an edge;
 			if (counter >= 100) {
 				deltaAngle -= 10;
+				teamBotArea -= 5;
 				counter = 0;
 			}
 
@@ -108,9 +115,11 @@ public class RandomMovement extends MovementStrategy {
 			target.setLocation(tx, ty);
 
 			// prevent to move into a team mate
-			for (Bot teamBot : team) {
-				int teamBotX = (int) teamBot.getPosX();
-				int teamBotY = (int) teamBot.getPosY();
+			
+			
+			for (Bot aBot : allBots) {
+				int teamBotX = (int) aBot.getPosX();
+				int teamBotY = (int) aBot.getPosY();
 				Rectangle botField = new Rectangle(new Point(teamBotX
 						- teamBotArea, teamBotY - teamBotArea), new Dimension(
 						teamBotX + teamBotArea, teamBotY + teamBotArea));

@@ -82,9 +82,10 @@ public class FuncLib {
 	}
 	
 	public static Data findDataByName(String name, ArrayList<Data> dataList) {
-
+		if(name == null) {
+			System.out.println("WARNING: No name was given.");
+		}
 		String robotName = name;
-
 		// Check
 		if (name.contains(" ")) {
 			int j = name.indexOf(" ");
@@ -97,6 +98,7 @@ public class FuncLib {
 				return data;
 			}
 		}
+		System.out.println("HFHFHF: " + name);
 		return null;
 	}
 
