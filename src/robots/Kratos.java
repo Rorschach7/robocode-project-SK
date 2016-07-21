@@ -1,31 +1,34 @@
 package robots;
 
+import java.awt.Color;
+
 import helper.strategies.gun.DynamicChange;
-import helper.strategies.movement.AntiGravity;
 import helper.strategies.movement.RandomMovement;
 import helper.strategies.movement.SpinAroundMovement;
 import helper.strategies.movement.StopMovement;
 
-import java.awt.Color;
-
-public class AntiGravityBot extends BaseBot {
+public class Kratos extends BaseBot {
+	
 	@Override
-	public void initialize() {
+	public void initialize() {		
 		super.initialize();
-
+		
 		// Color
 		setBodyColor(Color.black);
 		setGunColor(Color.red);
-		setRadarColor(Color.red);
-		setBulletColor(Color.green);
-
+		setRadarColor(Color.black);
+		setBulletColor(Color.red);
+		
 		// Strategies
-		gunStrategy = new DynamicChange();
-		attackingMovement = new AntiGravity();
+		gunStrategy = new DynamicChange();		
+		dodgeBullet = new RandomMovement(); 
 		scanningMovement = new StopMovement();
-		dodgeBullet = new RandomMovement();
+		attackingMovement = new StopMovement();
 		victoryDance = new SpinAroundMovement();
-
+		
 		printStatus = false;
+		printData = false;
+		
 	}
+
 }

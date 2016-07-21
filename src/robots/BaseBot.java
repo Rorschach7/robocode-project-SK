@@ -158,7 +158,7 @@ public class BaseBot extends TeamRobot {
 	public void onHitByBullet(HitByBulletEvent event) {
 		if (FuncLib.findBotByName(event.getName(), team) != null) {
 			if(DEBUG_MODE) {
-				System.out.println("Ouch, a team mate hit us!");				
+				System.out.println("A team mate hit us!");				
 			}
 			setState(State.Evading);
 			return;
@@ -176,8 +176,7 @@ public class BaseBot extends TeamRobot {
 		hitsTaken++;
 	}
 
-	public void onHitRobot(HitRobotEvent event) {
-		
+	public void onHitRobot(HitRobotEvent event) {		
 
 		if (FuncLib.findBotByName(event.getName(), team) != null) {
 			moveDirection *= -1;
@@ -685,17 +684,7 @@ public class BaseBot extends TeamRobot {
 
 		double xHi = c.getX() < d.getX() ? d.getX() : c.getX();
 		double yHi = c.getY() < d.getY() ? d.getY() : c.getY();
-
-		// System.out.println("A " + a);
-		// System.out.println("B " + b);
-		// System.out.println("C " + c);
-		// System.out.println("D " + d);
-
-		// System.out.println("Gun FWD: " + fwd.toString());
-		// System.out.println("Tank pos: " + getX() + " " + getY());
-		// System.out.println("Lower right corner " + xLo + " " + yLo);
-		// System.out.println("Upper left corner " + xHi + " " + yHi);
-
+		
 		for (Bot bot : team) {
 			double absBe = getHeadingRadians()
 					+ bot.getInfo().getBearingRadians();
