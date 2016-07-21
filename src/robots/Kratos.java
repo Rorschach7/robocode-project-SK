@@ -26,9 +26,9 @@ public class Kratos extends BaseBot {
 		attackingMovement = new StopMovement();
 		victoryDance = new SpinAroundMovement();
 		
+		// Outputs
 		printStatus = false;
-		printData = false;
-		
+		printData = false;		
 	}
 
 }
