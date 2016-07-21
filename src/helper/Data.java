@@ -1,9 +1,11 @@
 package helper;
 
+import helper.Enums.PrevDynMov;
 import helper.strategies.gun.DynamicChange;
 import helper.strategies.gun.GuessTargeting;
 import helper.strategies.gun.GunStrategy;
 import helper.strategies.gun.LinTargeting;
+import helper.strategies.movement.AntiGravity;
 import helper.strategies.movement.DynamicMovementChange;
 import helper.strategies.movement.MovementStrategy;
 import helper.strategies.movement.RandomMovement;
@@ -27,14 +29,18 @@ public class Data {
 	private double detectedBulletsRandom;
 	private double hitBulletsRandom;
 	
+	private double detectedBulletsAntiGrav;
+	private double hitBulletsAntiGrav;	
+	
 	private double detectedBulletsSurfing;
 	private double hitBulletsSurfing;
 	
 	private double prevHitBullets;
-	private boolean prevRand = true;
+	private PrevDynMov prevDynMov = PrevDynMov.Random;
 	
 	private double surfingSuccRate;
 	private double randomSuccRate;
+	private double antiGravSuccRate;
 	
 	private int wins;
 	private int losses;
@@ -110,23 +116,31 @@ public class Data {
 		}
 		
 		if(strategy instanceof RandomMovement){
-			if(!prevRand){
+			if(prevDynMov != PrevDynMov.Random){
 				prevHitBullets = 0;
 			}
 			hitBulletsRandom += enemyBulletsHit - prevHitBullets;		
 			detectedBulletsRandom++;
-			prevRand = true;
+			prevDynMov = PrevDynMov.Random;
 		}
 		
 		if(strategy instanceof SingleWaveSurfing){
-			if(prevRand){
+			if(prevDynMov != PrevDynMov.Surf){
 				prevHitBullets = 0;
 			}
 		   hitBulletsSurfing += enemyBulletsHit - prevHitBullets;
 		   detectedBulletsSurfing++;
-		   prevRand = false;
+		   prevDynMov = PrevDynMov.Surf;
 		}
 		
+		if(strategy instanceof AntiGravity){
+			if(prevDynMov != PrevDynMov.AntiGrav){
+				prevHitBullets = 0;
+			}
+			hitBulletsAntiGrav += enemyBulletsHit - prevHitBullets;
+			detectedBulletsAntiGrav++;
+			prevDynMov = PrevDynMov.AntiGrav;
+		}
 		
 		//calculate success rate
 		if(detectedBulletsRandom + hitBulletsRandom != 0){
@@ -135,6 +149,10 @@ public class Data {
 		
 		if(detectedBulletsSurfing + hitBulletsSurfing != 0){
 			surfingSuccRate = (detectedBulletsSurfing - hitBulletsSurfing) / detectedBulletsSurfing * 100;
+		}
+		
+		if(detectedBulletsAntiGrav + hitBulletsAntiGrav != 0){
+			antiGravSuccRate = (detectedBulletsAntiGrav - hitBulletsAntiGrav) / detectedBulletsAntiGrav * 100;
 		}
 		
 		prevHitBullets = enemyBulletsHit;
@@ -161,6 +179,10 @@ public class Data {
 		System.out.println("Detected Bullets: " + detectedBulletsSurfing);
 		System.out.println("Enemy Bullets Hit: " + hitBulletsSurfing);
 		System.out.println("Success Rate: " + surfingSuccRate);		
+		System.out.println("AntiGravityMovement:");
+		System.out.println("Detected Bullets: " + detectedBulletsAntiGrav);
+		System.out.println("Enemy Bullets Hit: " + hitBulletsAntiGrav);
+		System.out.println("Success Rate: " + antiGravSuccRate);		
 		System.out.println("---- End ----");
 		
 		if(!waveData) {
@@ -177,6 +199,10 @@ public class Data {
 		System.out.println("---------------------------------------------------");
 	}
 	
+	public double getAntiGravSuccRate() {
+		return antiGravSuccRate;
+	}
+
 	public void win() {
 		wins++;
 	}

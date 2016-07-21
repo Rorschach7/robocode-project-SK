@@ -4,7 +4,6 @@ import helper.Bot;
 import helper.FuncLib;
 import helper.GravPoint;
 import java.util.ArrayList;
-import java.util.Collections;
 import robots.BaseBot;
 
 public class AntiGravity extends MovementStrategy {

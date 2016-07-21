@@ -11,38 +11,48 @@ public class DynamicMovementChange extends MovementStrategy {
 	// Strategies
 	private SingleWaveSurfing singleWaveSurfing = new SingleWaveSurfing();
 	private RandomMovement randomMovement = new RandomMovement();
+	private AntiGravity antigravMovement = new AntiGravity();
 	private MovementStrategy strategy = randomMovement;
 	
 	// Statistics	
 	private double successRate = 100;
-	private double formerSuccessRate = 100;
-	private double formerHitsTaken;
-	private double formerDetectedBullets;
+	private double highestSuccessRate = 100;
+	private double highestHitsTaken;
+	private double highestDetectedBullets;
+	private int passedAllMovements = 0;
 	
 	// Timer
 	private int count = 0;
-	private int interval = 100;
+	private int interval = 50;
 	
 	@Override
 	public void execute(BaseBot robot) {
 		// Check if we have reliable data about our target
 		Data data = FuncLib.findDataByName(robot.getTarget().getName(), robot.getDataList());
-		
 		if(data.movementIsReliable()){
-			if(data.getRandomSuccRate() > data.getSurfingSuccRate()){
+			double randSucc = data.getRandomSuccRate();
+			double antiSucc = data.getAntiGravSuccRate();
+			double surfSucc = data.getSurfingSuccRate();
+			
+			//choose strategy with highest success rate
+			if(randSucc > antiSucc && randSucc > surfSucc){
 				randomMovement.execute(robot);
+			}else if(antiSucc > randSucc && antiSucc > surfSucc){
+				antigravMovement.execute(robot);
 			}else{
 				singleWaveSurfing.execute(robot);
 			}
+			
+
 		} else {
 			strategy.execute(robot);
 			count++;
 			if(count >= interval) {
-				formerSuccessRate = successRate;
+				highestSuccessRate = successRate;
 				
 				//sometimes a bullet on the fly while changing creates false data
-				if(robot.getEnemyBulletsDetected() < robot.getHitsTaken() && formerDetectedBullets != 0){
-					formerSuccessRate = (formerDetectedBullets - (formerHitsTaken+1)) / formerDetectedBullets * 100;
+				if(robot.getEnemyBulletsDetected() < robot.getHitsTaken() && highestDetectedBullets != 0){
+					highestSuccessRate = (highestDetectedBullets - (highestHitsTaken+1)) / highestDetectedBullets * 100;
 					robot.setHitsTaken(robot.getHitsTaken()-1);
 				}
 				
@@ -54,25 +64,33 @@ public class DynamicMovementChange extends MovementStrategy {
 				count = 0;
 				robot.setEnemyBulletsDetected(0);
 				robot.setHitsTaken(0);
-				formerHitsTaken = robot.getHitsTaken();
-				formerDetectedBullets = robot.getEnemyBulletsDetected();				
+				highestHitsTaken = robot.getHitsTaken();
+				highestDetectedBullets = robot.getEnemyBulletsDetected();				
 				
-				if(successRate > formerSuccessRate){
+				if(successRate > highestSuccessRate && passedAllMovements >= 3){
 					//Don't change, current movement strategy is better
 					return;
 				}
 				
 				if(strategy instanceof RandomMovement){
 					if(BaseBot.DEBUG_MODE) {								
-						System.out.println("switch to surfing");					
+						System.out.println("MOVE: switch to surfing");	
 					}
 					strategy = singleWaveSurfing;
-				}else{
+					passedAllMovements++;
+				}else if(strategy instanceof SingleWaveSurfing){
 					if(BaseBot.DEBUG_MODE) {								
-						System.out.println("switch to rand");
+						System.out.println("MOVE: switch to anti grav");
+					}
+					strategy = antigravMovement;
+					passedAllMovements++;
+				}else if(strategy instanceof AntiGravity){
+					if(BaseBot.DEBUG_MODE) {								
+						System.out.println("MOVE: switch to rand");
 					}
 					strategy = randomMovement;
-				}				
+					passedAllMovements++;
+				}
 			}
 		}		
 	}
